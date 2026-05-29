@@ -15,6 +15,9 @@ def render_index() -> None:
 
     state: dict[str, int | None] = {"category_id": None}
 
+    # make dark mode by default
+    ui.dark_mode().enable()
+
     with ui.header().classes("bg-slate-900 text-white"):
         ui.label("Records").classes("text-xl font-semibold")
         ui.space()
