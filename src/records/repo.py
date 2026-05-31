@@ -29,7 +29,7 @@ def list_categories(session: Session) -> list[Category]:
 def create_entry(
     session: Session,
     *,
-    category_id: int,
+    category_name: str,
     title: str,
     creator: str = "",
     tags: str = "",
@@ -37,7 +37,7 @@ def create_entry(
 ) -> Entry:
     now = utc_now()
     entry = Entry(
-        category_id=category_id,
+        category_name=category_name,
         title=title.strip(),
         creator=creator.strip(),
         tags=tags.strip(),
@@ -54,14 +54,14 @@ def create_entry(
 def list_entries(
     session: Session,
     *,
-    category_id: int | None,
+    category_name: str | None,
     search: str = "",
     sort_by: str = "Title",
 ) -> list[Entry]:
     statement = select(Entry)
 
-    if category_id is not None:
-        statement = statement.where(Entry.category_id == category_id)
+    if category_name is not None:
+        statement = statement.where(Entry.category_name == category_name)
 
     term = search.strip()
     if term:
@@ -86,4 +86,3 @@ def list_entries(
 
 def format_datetime(value: datetime) -> str:
     return value.strftime("%Y-%m-%d")
-

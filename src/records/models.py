@@ -7,6 +7,7 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# Create the SQLModel Model for the Category Table
 class Category(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, unique=True)
@@ -15,9 +16,10 @@ class Category(SQLModel, table=True):
     entries: list["Entry"] = Relationship(back_populates="category")
 
 
+# Create the SQLModel Model for the Entry Table
 class Entry(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    category_id: int = Field(foreign_key="category.id", index=True)
+    category_name: str = Field(foreign_key="category.name", index=True)
     title: str = Field(index=True)
     creator: str = Field(default="", index=True)
     notes: str = ""
@@ -26,4 +28,3 @@ class Entry(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utc_now)
 
     category: Category | None = Relationship(back_populates="entries")
-

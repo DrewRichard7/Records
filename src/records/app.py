@@ -6,14 +6,14 @@ from records.models import Category
 from records.repo import create_category, create_entry, format_datetime, list_categories, list_entries
 
 
-def _category_options(categories: list[Category]) -> dict[int, str]:
-    return {category.id: category.name for category in categories if category.id is not None}
+def _category_options(categories: list[Category]) -> dict[str, str]:
+    return {category.name: category.name for category in categories}
 
 
 def render_index() -> None:
     ui.page_title("Records")
 
-    state: dict[str, int | None] = {"category_id": None}
+    state: dict[str, str | None] = {"category_name": None}
 
     # make dark mode by default
     ui.dark_mode().enable()
@@ -39,7 +39,7 @@ def render_index() -> None:
                     try:
                         with get_session() as session:
                             category = create_category(session, name, category_description.value or "")
-                            state["category_id"] = category.id
+                            state["category_name"] = category.name
                     except IntegrityError:
                         ui.notify("A category with that name already exists.", type="warning")
                         return
@@ -87,9 +87,9 @@ def render_index() -> None:
                 notes_input = ui.textarea("Notes").props("outlined dense").classes("w-full")
 
             def save_entry() -> None:
-                category_id = state["category_id"]
+                category_name = state["category_name"]
                 title = title_input.value.strip()
-                if category_id is None:
+                if category_name is None:
                     ui.notify("Create or select a category first.", type="warning")
                     return
                 if not title:
@@ -98,7 +98,7 @@ def render_index() -> None:
                 with get_session() as session:
                     create_entry(
                         session,
-                        category_id=category_id,
+                        category_name=category_name,
                         title=title,
                         creator=creator_input.value or "",
                         tags=tags_input.value or "",
@@ -113,24 +113,24 @@ def render_index() -> None:
 
             ui.button("Save entry", icon="save", on_click=save_entry).props("color=primary")
 
-    def select_category(category_id: int | None) -> None:
-        state["category_id"] = category_id
+    def select_category(category_name: str | None) -> None:
+        state["category_name"] = category_name
         refresh_entries()
 
     def refresh_categories() -> None:
         with get_session() as session:
             categories = list_categories(session)
         category_select.options = _category_options(categories)
-        if state["category_id"] not in category_select.options:
-            state["category_id"] = next(iter(category_select.options), None)
-        category_select.value = state["category_id"]
+        if state["category_name"] not in category_select.options:
+            state["category_name"] = next(iter(category_select.options), None)
+        category_select.value = state["category_name"]
         category_select.update()
 
     def refresh_entries() -> None:
         with get_session() as session:
             entries = list_entries(
                 session,
-                category_id=state["category_id"],
+                category_name=state["category_name"],
                 search=search_input.value or "",
                 sort_by=sort_select.value or "Title",
             )
