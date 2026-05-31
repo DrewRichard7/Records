@@ -28,8 +28,8 @@ def render_index() -> None:
 
         with ui.expansion("Create category", icon="create_new_folder").classes("w-full"):
             with ui.row().classes("w-full items-end gap-3"):
-                category_name = ui.input("Name").props("outlined dense").classes("min-w-64")
-                category_description = ui.input("Description").props("outlined dense").classes("flex-1")
+                category_name = ui.input("Name", placeholder="Vinyls, Knitting Patterns, Books, etc.").props("outlined dense").classes("min-w-64")
+                category_description = ui.input("Description", placeholder = "Ex: 'My vinyl collectionj").props("outlined dense").classes("flex-1")
 
                 def save_category() -> None:
                     name = category_name.value.strip()
@@ -58,7 +58,7 @@ def render_index() -> None:
                 on_change=lambda event: select_category(event.value),
             ).props("outlined dense").classes("min-w-72")
             search_input = ui.input(
-                "Search",
+            "Search",
                 placeholder="Title, creator, tags, notes",
                 on_change=lambda: refresh_entries(),
             ).props("outlined dense clearable").classes("flex-1")
@@ -76,7 +76,9 @@ def render_index() -> None:
             {"name": "notes", "label": "Notes", "field": "notes", "align": "left"},
             {"name": "created_at", "label": "Created", "field": "created_at", "align": "left"},
         ]
-        entries_table = ui.table(columns=columns, rows=[], row_key="id").classes("w-full")
+
+        #just show the first 4 cols, created_at and updated_at are metadata
+        entries_table = ui.table(columns=columns[0:4], rows=[], row_key="id").classes("w-full").tooltip(f"{columns[4]}")
 
         with ui.card().classes("w-full"):
             ui.label("Add entry").classes("text-lg font-medium")
