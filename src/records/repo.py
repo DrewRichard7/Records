@@ -84,5 +84,10 @@ def list_entries(
     return list(session.exec(statement))
 
 
+def update_entry(
+        session,
+        entry_id:
+        )
+
 def format_datetime(value: datetime) -> str:
     return value.strftime("%Y-%m-%d")

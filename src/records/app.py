@@ -74,11 +74,11 @@ def render_index() -> None:
             {"name": "creator", "label": "Creator", "field": "creator", "align": "left"},
             {"name": "tags", "label": "Tags", "field": "tags", "align": "left"},
             {"name": "notes", "label": "Notes", "field": "notes", "align": "left"},
-            {"name": "created_at", "label": "Created", "field": "created_at", "align": "left"},
+            {"name": "created_at", "label": "Entry Added", "field": "created_at", "align": "left"},
         ]
 
         #just show the first 4 cols, created_at and updated_at are metadata
-        entries_table = ui.table(columns=columns[0:4], rows=[], row_key="id").classes("w-full").tooltip(f"{columns[4]}")
+        entries_table = ui.table(columns=columns, rows=[], row_key="id").classes("w-full")
 
         with ui.card().classes("w-full"):
             ui.label("Add entry").classes("text-lg font-medium")
