@@ -1,13 +1,9 @@
-from ntpath import exists
 import os
 from pathlib import Path
-from shlex import join
 
 from sqlalchemy import text
-from sqlalchemy.orm.sync import source_modified
-from sqlmodel import SQLModel, Session, create_engine, table
+from sqlmodel import SQLModel, create_engine, Session
 
-from records import models
 
 # define where the database is stored: uses envvar if set, otherwise root dir
 def database_path() -> Path:
@@ -19,7 +15,7 @@ def database_path() -> Path:
 DB_PATH = database_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-# create database engine
+# create database e
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
 
 def _table_columns(connection, table_name: str) -> dict[str, str]:
@@ -27,7 +23,7 @@ def _table_columns(connection, table_name: str) -> dict[str, str]:
     return {row["name"]: (row["type"] or "").upper() for row in rows}
 
 def _migrate_entry_category_column() -> None:
-    with enging.begin() as connection:
+    with engine.begin() as connection:
         columns = _table_columns(connection, "entry")
         if not columns:
             return
@@ -78,4 +74,12 @@ def _migrate_entry_category_column() -> None:
                     """
                     )
                 )
+        connection.execute(text("DROP TABLE entry_old"))
+        connection.execute(text("PRAGMA foreign_keys=ON"))
 
+def init_db() -> None:
+    SQLModel.metadata.create_all(engine)
+    _migrate_entry_category_column()
+
+def get_session() -> Session:
+    return Session(engine)
