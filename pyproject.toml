@@ -16,5 +16,5 @@ records = "records.app:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.ruff.lint] =
+[tool.ruff.lint]
 ignore = ["F821"]
