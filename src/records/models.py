@@ -24,7 +24,7 @@ class Entry(SQLModel, table=True):
     title: str = Field(index=True)
     creator: str = Field(default="", index=True)
     notes: str = ""
-    tags: str | int = Field(default="", index=True)
+    tags: str = Field(default="", index=True)
     created_at: datetime = Field(default_factory=utc_now, index=True)
     updated_at: datetime = Field(default_factory=utc_now)
 
