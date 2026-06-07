@@ -1,0 +1,22 @@
+<div class="row-list">
+  {% for entry in entries %}
+    <div class="entry-row" id="entry-{{ entry.id }}">
+      <div>
+        <a class="entry-title" href="/entries/{{ entry.id }}">{{ entry.title }}</a>
+        <span class="muted">{{ entry.creator }}</span>
+        <div class="tag-strip compact">
+          {% for tag in split_tags(entry.tags) %}<a class="tag" href="/search?tag={{ tag|urlencode }}">{{ tag }}</a>{% endfor %}
+        </div>
+      </div>
+      <div class="entry-meta">
+        {% if entry.category %}<a href="/categories/{{ entry.category.id }}">{{ entry.category.name }}</a>{% endif %}
+        <span class="muted">{{ entry.created_at|date }}</span>
+        <form action="/entries/{{ entry.id }}/delete" method="post" hx-post="/entries/{{ entry.id }}/delete" hx-target="#entry-{{ entry.id }}" hx-swap="outerHTML" hx-confirm="Delete this entry?">
+          <button class="link-button danger" type="submit">Delete</button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p class="muted">No entries found.</p>
+  {% endfor %}
+</div>

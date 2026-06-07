@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.title }} - Records{% endblock %}
+{% block content %}
+<div class="detail-grid">
+  <aside class="sidebar-card">
+    {% if entry.image_url %}<img class="entry-image" src="{{ entry.image_url }}" alt="">{% endif %}
+    <h2>Summary</h2>
+    <div class="meta-row"><span>Category</span><a href="/categories/{{ entry.category.id }}">{{ entry.category.name }}</a></div>
+    <div class="meta-row"><span>Creator</span><strong>{{ entry.creator or "Unknown" }}</strong></div>
+    <div class="meta-row"><span>Created</span><strong>{{ entry.created_at|date }}</strong></div>
+    <div class="meta-row"><span>Updated</span><strong>{{ entry.updated_at|date }}</strong></div>
+    <div class="actions stacked">
+      <a class="button" href="/entries/{{ entry.id }}/edit">Edit</a>
+      <form action="/entries/{{ entry.id }}/delete" method="post">
+        <button class="danger" type="submit">Delete</button>
+      </form>
+    </div>
+  </aside>
+
+  <article class="detail-main panel">
+    <p class="eyebrow">Entry</p>
+    <h1>{{ entry.title }}</h1>
+    <p class="creator-line">{{ entry.creator or "Unknown creator" }}</p>
+    <div class="tag-strip">
+      {% for tag in split_tags(entry.tags) %}<a class="tag" href="/search?tag={{ tag|urlencode }}">{{ tag }}</a>{% endfor %}
+    </div>
+
+    <div class="detail-table">
+      <div class="detail-row"><span>Category</span><a href="/categories/{{ entry.category.id }}">{{ entry.category.name }}</a></div>
+      <div class="detail-row"><span>Creator</span><span>{{ entry.creator or "" }}</span></div>
+      <div class="detail-row"><span>Source</span><span>{% if entry.source_url %}<a href="{{ entry.source_url }}">{{ entry.source_url }}</a>{% endif %}</span></div>
+      <div class="detail-row"><span>Created</span><span>{{ entry.created_at }}</span></div>
+      <div class="detail-row"><span>Updated</span><span>{{ entry.updated_at }}</span></div>
+    </div>
+
+    <section class="notes-block">
+      <h2>Notes</h2>
+      <p>{{ entry.notes or "No notes yet." }}</p>
+    </section>
+  </article>
+
+  <aside class="sidebar-card">
+    <h2>Database Links</h2>
+    <a href="/search?category_id={{ entry.category_id }}">More in {{ entry.category.name }}</a>
+    {% if entry.creator %}<a href="/search?creator={{ entry.creator|urlencode }}">More by {{ entry.creator }}</a>{% endif %}
+    {% for tag in split_tags(entry.tags) %}<a href="/search?tag={{ tag|urlencode }}">Tagged {{ tag }}</a>{% endfor %}
+  </aside>
+</div>
+{% endblock %}
