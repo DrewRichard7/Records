@@ -8,7 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
-
+.env
+.envrc
 # Local app data
 records.db
 records.db-*
