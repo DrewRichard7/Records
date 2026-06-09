@@ -2,7 +2,9 @@
   --bg: #151925;
   --panel: #191c28;
   --panel-2: #1d2130;
-  --line: #34394a;
+  --line: rgba(199, 232, 248, .62);
+  --line-strong: rgba(222, 244, 255, .78);
+  --edge-shadow: 0 0 3px rgba(142, 211, 255, .1);
   --text: #c9ccd6;
   --muted: #9ca3b3;
   --link: #9fb4ff;
@@ -35,6 +37,7 @@ h2 { font-size: 1rem; color: #dfe3ee; }
   padding: 0 1rem;
   background: #101421;
   border-bottom: 1px solid var(--line);
+  box-shadow: var(--edge-shadow);
 }
 
 .brand { font-weight: 700; font-size: 1.25rem; color: #e9ecf6; }
@@ -45,9 +48,11 @@ h2 { font-size: 1rem; color: #dfe3ee; }
 .panel, .sidebar-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
+  box-shadow: var(--edge-shadow);
   padding: 1rem;
 }
+.panel { overflow-x: auto; }
 .panel + .panel { margin-top: 1rem; }
 .narrow { max-width: 760px; }
 
@@ -57,9 +62,10 @@ h2 { font-size: 1rem; color: #dfe3ee; }
   justify-content: space-between;
   gap: 1rem;
 }
+.actions, .form-actions, .section-heading { flex-wrap: wrap; }
 .page-title { margin: .5rem 0 1rem; }
-.two-column { display: grid; grid-template-columns: 1fr 1.35fr; gap: 1rem; margin-top: 1rem; }
-.detail-grid { display: grid; grid-template-columns: 230px minmax(0, 1fr) 230px; gap: 1rem; align-items: start; }
+.two-column { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 1rem; margin-top: 1rem; }
+.detail-grid { display: grid; grid-template-columns: minmax(180px, 230px) minmax(0, 1fr) minmax(180px, 230px); gap: 1rem; align-items: start; }
 
 .muted { color: var(--muted); }
 .caption, .eyebrow { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
@@ -74,7 +80,8 @@ h2 { font-size: 1rem; color: #dfe3ee; }
   padding: .65rem .75rem;
   background: var(--panel-2);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 0;
+  box-shadow: var(--edge-shadow);
 }
 .entry-title { font-weight: 700; font-size: 1rem; }
 .entry-meta { display: flex; align-items: center; gap: .6rem; text-align: right; white-space: nowrap; }
@@ -84,10 +91,11 @@ h2 { font-size: 1rem; color: #dfe3ee; }
 .tag, .pill {
   display: inline-block;
   padding: .15rem .48rem;
-  border-radius: 999px;
+  border-radius: 0;
   background: #263763;
   color: #cbd7ff;
-  border: 1px solid #3c5087;
+  border: 1px solid var(--line);
+  box-shadow: var(--edge-shadow);
   font-size: .78rem;
 }
 
@@ -97,15 +105,17 @@ h2 { font-size: 1rem; color: #dfe3ee; }
   justify-content: center;
   min-height: 34px;
   padding: .45rem .75rem;
-  border-radius: 5px;
-  border: 1px solid #7088d6;
+  border-radius: 0;
+  border: 1px solid var(--line-strong);
   background: var(--accent);
   color: white;
   font: inherit;
   cursor: pointer;
+  box-shadow: var(--edge-shadow);
+  text-align: center;
 }
 .button.secondary { background: #252b3d; border-color: var(--line); color: var(--text); }
-.danger { color: white; background: #7d303a; border-color: #a64b58; }
+.danger { color: white; background: #7d303a; border-color: var(--line-strong); }
 .link-button { min-height: auto; padding: 0; border: 0; background: transparent; color: var(--link); }
 .link-button.danger { color: var(--danger); }
 
@@ -117,27 +127,31 @@ input, select, textarea {
   min-height: 34px;
   padding: .45rem .55rem;
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: 0;
   background: var(--input);
   color: var(--text);
   font: inherit;
+  box-shadow: var(--edge-shadow);
 }
 textarea { resize: vertical; }
 .filterbar { justify-content: flex-start; margin-bottom: 1rem; }
-.filterbar input { min-width: 260px; }
+.filterbar input, .filterbar select { width: auto; max-width: 100%; }
+.filterbar input { min-width: min(260px, 100%); }
+.filterbar.wrap > input { flex: 1 1 260px; }
+.filterbar.wrap > select { flex: 1 1 160px; }
 .wrap { flex-wrap: wrap; }
 
-.data-table { width: 100%; border-collapse: collapse; }
+.data-table { width: 100%; min-width: 620px; border-collapse: collapse; }
 .data-table th, .data-table td { padding: .55rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .data-table th { color: #e1e5f0; background: var(--panel-2); }
-.row-actions { display: flex; gap: .65rem; align-items: center; }
+.row-actions { display: flex; flex-wrap: wrap; gap: .65rem; align-items: center; }
 
 .sidebar-card { display: grid; gap: .65rem; }
 .sidebar-card a { display: block; }
-.entry-image { width: 100%; border-radius: 6px; border: 1px solid var(--line); }
+.entry-image { display: block; width: 100%; max-height: 70vh; object-fit: cover; border-radius: 0; border: 1px solid var(--line); box-shadow: var(--edge-shadow); }
 .stacked { display: grid; align-items: stretch; }
 
-.detail-main { min-width: 0; }
+.detail-main { min-width: 0; overflow-wrap: anywhere; }
 .detail-table { margin-top: 1rem; border-top: 1px solid var(--line); }
 .detail-row, .meta-row {
   display: grid;
@@ -148,14 +162,20 @@ textarea { resize: vertical; }
 }
 .detail-row > span:first-child, .meta-row > span:first-child { color: var(--muted); }
 .notes-block { margin-top: 1rem; white-space: pre-wrap; }
-.error { color: #ffd4d8; background: #4a2027; border: 1px solid #803743; padding: .6rem; border-radius: 5px; }
+.error { color: #ffd4d8; background: #4a2027; border: 1px solid var(--line); padding: .6rem; border-radius: 0; box-shadow: var(--edge-shadow); }
 .search-preview:empty { display: none; }
 
 @media (max-width: 860px) {
   .topbar, .hero, .page-title { align-items: flex-start; flex-direction: column; }
   .two-column, .detail-grid { grid-template-columns: 1fr; }
   .list-row, .entry-row, .entry-meta { align-items: flex-start; flex-direction: column; text-align: left; }
-  .filterbar { align-items: stretch; flex-direction: column; }
-  .filterbar input { min-width: 0; }
+  .filterbar, .actions, .form-actions { align-items: stretch; flex-direction: column; }
+  .filterbar input, .filterbar select, .button, button { width: 100%; min-width: 0; }
   .detail-row, .meta-row { grid-template-columns: 1fr; gap: .2rem; }
+}
+
+@media (max-width: 520px) {
+  .container { width: min(100% - 1rem, 1180px); margin-top: .75rem; }
+  .topbar, .panel, .sidebar-card { padding: .75rem; }
+  .navlinks { gap: .55rem .75rem; }
 }

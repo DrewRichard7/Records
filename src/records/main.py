@@ -1,4 +1,5 @@
 from pathlib import Path
+import socket
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
@@ -18,6 +19,23 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 templates.env.filters["date"] = repo.format_datetime
 templates.env.globals["split_tags"] = repo.split_tags
+
+
+def get_lan_ip() -> str | None:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("8.8.8.8", 80))
+            return sock.getsockname()[0]
+    except OSError:
+        return None
+
+
+def print_startup_urls(host: str, port: int) -> None:
+    print(f"Records running at: http://127.0.0.1:{port}")
+    if host in {"0.0.0.0", "::"}:
+        lan_ip = get_lan_ip()
+        if lan_ip:
+            print(f"Phone/LAN URL:      http://{lan_ip}:{port}")
 
 
 def session_dep():
@@ -261,4 +279,7 @@ def search(
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("records.main:app", host="0.0.0.0", port=8000, reload=False)
+    host = "0.0.0.0"
+    port = 8000
+    print_startup_urls(host, port)
+    uvicorn.run("records.main:app", host=host, port=port, reload=False)

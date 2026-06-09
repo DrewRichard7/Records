@@ -112,6 +112,8 @@ Open:
 http://127.0.0.1:8000
 ```
 
+The startup output also prints a `Phone/LAN URL` such as `http://192.168.68.60:8000` when a LAN address can be detected.
+
 You can also run the FastAPI app directly with uvicorn:
 
 ```bash
@@ -143,16 +145,10 @@ mkdir -p /home/pi/.local/share/records
 Start the app bound to all network interfaces:
 
 ```bash
-uv run uvicorn records.main:app --host 0.0.0.0 --port 8000
+uv run python -m records
 ```
 
-Find the LAN IP address of the machine running Records:
-
-```bash
-hostname -I
-```
-
-Use the address that looks like `192.168.x.x`, `10.x.x.x`, or `172.16.x.x` through `172.31.x.x`.
+Use the printed `Phone/LAN URL`. It should look like `192.168.x.x`, `10.x.x.x`, or `172.16.x.x` through `172.31.x.x`.
 
 Example:
 
