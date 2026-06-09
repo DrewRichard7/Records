@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ category.name }} - Records{% endblock %}
+{% block content %}
+<div class="page-title">
+  <div>
+    <p class="eyebrow">Category</p>
+    <h1>{{ category.name }}</h1>
+    <p class="muted">{{ category.description or "No description" }}</p>
+  </div>
+  <div class="actions">
+    <a class="button" href="/entries/new?category_id={{ category.id }}">Add entry</a>
+    <a class="button secondary" href="/categories/{{ category.id }}/edit">Edit category</a>
+  </div>
+</div>
+
+<section class="panel">
+  <form class="filterbar" method="get" action="/categories/{{ category.id }}" hx-get="/categories/{{ category.id }}" hx-target="#entry-list" hx-trigger="change, keyup changed delay:250ms from:input">
+    <select name="creator">
+      <option value="">All creators</option>
+      {% for creator in creators %}<option value="{{ creator }}" {% if creator == selected_creator %}selected{% endif %}>{{ creator }}</option>{% endfor %}
+    </select>
+    <select name="tag">
+      <option value="">All tags</option>
+      {% for tag in tags %}<option value="{{ tag }}" {% if tag == selected_tag %}selected{% endif %}>{{ tag }}</option>{% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+  </form>
+  <div id="entry-list">
+    {% include "partials/entry_list.html" %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if entry else "New" }} Entry - Records{% endblock %}
+{% block content %}
+<div class="page-title"><h1>{{ "Edit" if entry else "New" }} Entry</h1></div>
+<section class="panel narrow">
+  <form class="record-form" action="{{ '/entries/' ~ entry.id if entry else '/entries' }}" method="post">
+    <label>Category
+      <select required name="category_id">
+        {% for category in categories %}
+          <option value="{{ category.id }}" {% if category.id == category_id %}selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Title <input required name="title" value="{{ entry.title if entry else '' }}"></label>
+    <label>Creator <input name="creator" value="{{ entry.creator if entry else '' }}"></label>
+    <label>Tags <input name="tags" placeholder="comma, separated, tags" value="{{ entry.tags if entry else '' }}"></label>
+    <label>Source URL <input name="source_url" type="url" value="{{ entry.source_url if entry else '' }}"></label>
+    <label>Image URL or path <input name="image_url" value="{{ entry.image_url if entry else '' }}"></label>
+    <label>Notes <textarea name="notes" rows="10">{{ entry.notes if entry else '' }}</textarea></label>
+    <div class="form-actions">
+      <button type="submit">Save entry</button>
+      <a class="button secondary" href="{{ '/entries/' ~ entry.id if entry else '/' }}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

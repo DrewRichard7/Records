@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Records{% endblock %}
+{% block content %}
+<section class="hero panel">
+  <div>
+    <p class="eyebrow">Personal catalog</p>
+    <h1>Records</h1>
+    <p class="muted">A fast local memory palace for records, books, recipes, tools, patterns, and collections.</p>
+  </div>
+  <div class="actions">
+    <a class="button" href="/entries/new">Create entry</a>
+    <a class="button secondary" href="/categories/new">Create category</a>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Search</h2>
+  <form class="filterbar" action="/search" method="get" hx-get="/search" hx-target="#home-results" hx-trigger="keyup changed delay:250ms from:input, submit">
+    <input type="search" name="q" placeholder="Search title, creator, notes, tags, category" value="{{ query }}" autofocus>
+    <button type="submit">Search</button>
+  </form>
+  <div id="home-results" class="search-preview"></div>
+</section>
+
+<div class="two-column">
+  <section class="panel">
+    <div class="section-heading">
+      <h2>Categories</h2>
+      <a href="/categories">View all</a>
+    </div>
+    <div class="row-list">
+      {% for category, count in categories %}
+        <a class="list-row" href="/categories/{{ category.id }}">
+          <span>
+            <strong>{{ category.name }}</strong>
+            <span class="muted block">{{ category.description or "No description" }}</span>
+          </span>
+          <span class="pill">{{ count }} entries</span>
+        </a>
+      {% else %}
+        <p class="muted">No categories yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-heading">
+      <h2>Recently Added</h2>
+      <a href="/search">Browse</a>
+    </div>
+    {% set entries = recent_entries %}
+    {% include "partials/entry_list.html" %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{
+  "name": "Records",
+  "short_name": "Records",
+  "description": "A local personal cataloging app.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#151925",
+  "theme_color": "#151925",
+  "icons": [
+    {
+      "src": "/static/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/favicon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

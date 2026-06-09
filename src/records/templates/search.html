@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Search - Records{% endblock %}
+{% block content %}
+<div class="page-title">
+  <div>
+    <h1>Search</h1>
+    <p class="muted">Search title, creator, notes, tags, and category.</p>
+  </div>
+</div>
+<section class="panel">
+  <form class="filterbar wrap" action="/search" method="get" hx-get="/search" hx-target="#search-results" hx-trigger="keyup changed delay:250ms from:input, change, submit">
+    <input type="search" name="q" value="{{ query }}" placeholder="Search records">
+    <select name="category_id">
+      <option value="">All categories</option>
+      {% for category in categories %}<option value="{{ category.id }}" {% if category.id == category_id %}selected{% endif %}>{{ category.name }}</option>{% endfor %}
+    </select>
+    <select name="creator">
+      <option value="">All creators</option>
+      {% for creator in creators %}<option value="{{ creator }}" {% if creator == selected_creator %}selected{% endif %}>{{ creator }}</option>{% endfor %}
+    </select>
+    <select name="tag">
+      <option value="">All tags</option>
+      {% for tag in tags %}<option value="{{ tag }}" {% if tag == selected_tag %}selected{% endif %}>{{ tag }}</option>{% endfor %}
+    </select>
+    <button type="submit">Search</button>
+  </form>
+  <div id="search-results">
+    {% include "partials/search_results.html" %}
+  </div>
+</section>
+{% endblock %}
