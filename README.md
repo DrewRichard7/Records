@@ -334,6 +334,20 @@ sudo ufw status
 
 Tailscale lets you access Records remotely without exposing it to the public internet. This is the recommended remote-access option for a personal app without built-in authentication.
 
+Recommended setup:
+
+- Keep Records itself running as local HTTP on the Pi, usually `http://127.0.0.1:8000` or `http://0.0.0.0:8000`.
+- Let Tailscale provide the remote HTTPS URL for your phone.
+- Do not port-forward Records from your home router to the public internet.
+
+With Tailscale Serve, your phone can use a URL like:
+
+```text
+https://raspberrypi.<tailnet-name>.ts.net
+```
+
+The FastAPI app does not need to manage certificates directly.
+
 ### 1. Install Tailscale on the Pi
 
 Use Tailscale's official install command:
@@ -354,7 +368,52 @@ Follow the login URL shown in the terminal.
 
 Install Tailscale on the devices you want to use remotely and sign into the same Tailnet account.
 
-### 3. Find the Pi's Tailscale address
+### 3. Enable MagicDNS and HTTPS
+
+In the Tailscale admin console:
+
+- Enable MagicDNS.
+- Enable HTTPS certificates for your Tailnet.
+
+This lets Tailscale issue a trusted HTTPS certificate for names ending in `.ts.net`.
+
+### 4. Serve Records over Tailscale HTTPS
+
+Make sure Records is already running on the Pi, then run:
+
+```bash
+sudo tailscale serve --bg --https=443 http://127.0.0.1:8000
+```
+
+Open the HTTPS URL from your phone while connected to Tailscale:
+
+```text
+https://raspberrypi.<tailnet-name>.ts.net
+```
+
+Use your Pi's actual Tailscale machine name and Tailnet name. You can find the full name in the Tailscale admin console or with:
+
+```bash
+tailscale status
+```
+
+To check the serve configuration on the Pi:
+
+```bash
+tailscale serve status
+```
+
+To stop serving Records over Tailscale HTTPS:
+
+```bash
+sudo tailscale serve reset
+```
+
+### 5. Plain HTTP fallback
+
+If you do not want to use Tailscale Serve yet, you can still access Records over plain HTTP through Tailscale.
+
+Find the Pi's Tailscale address:
 
 On the Pi:
 
@@ -374,7 +433,7 @@ Access Records from any device on your Tailnet:
 http://100.x.y.z:8000
 ```
 
-### 4. Use MagicDNS if enabled
+You can also use MagicDNS without HTTPS:
 
 If MagicDNS is enabled in the Tailscale admin console, you can use the Pi hostname instead of the numeric Tailscale IP.
 
@@ -390,11 +449,12 @@ Depending on your Tailnet DNS settings, the full name may look like:
 http://raspberrypi.<tailnet-name>.ts.net:8000
 ```
 
-### 5. Security notes for Tailscale
+### 6. Security notes for Tailscale
 
 - Records currently has no login screen.
 - Anyone with network access to the app URL can use it.
 - Tailscale access is usually appropriate for personal use because only devices in your Tailnet can reach the Pi.
+- Tailscale HTTPS protects the browser connection to the Pi, but it does not add app-level login.
 - Do not port-forward Records directly from your router to the public internet unless you add authentication or place it behind a trusted auth proxy.
 
 ## Updating the app on the Pi
@@ -434,11 +494,13 @@ Copy backups to another machine periodically.
 
 ### The app works on the Pi but not from my phone
 
-- Use `http://<pi-lan-ip>:8000`, not `https://`.
+- On the local LAN without Tailscale Serve, use `http://<pi-lan-ip>:8000`, not `https://`.
+- For remote access with Tailscale Serve, use the Tailscale HTTPS URL, for example `https://raspberrypi.<tailnet-name>.ts.net`.
 - Make sure the app is running with `--host 0.0.0.0`.
 - Make sure the phone is on the same Wi-Fi network.
 - Disable guest Wi-Fi or client isolation.
 - Allow port `8000/tcp` through the firewall.
+- If using Tailscale, make sure the phone is connected to Tailscale and signed into the same Tailnet.
 
 ### `uv run uvicorn` does not start
 
