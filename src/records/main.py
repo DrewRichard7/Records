@@ -1,18 +1,27 @@
 from pathlib import Path
 import socket
 from typing import Annotated
+from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 
 from records import repo
-from records.db import DB_PATH, get_session, init_db
+from records.db import DB_PATH, UPLOAD_DIR, get_session, init_db
 
 
 BASE_DIR = Path(__file__).resolve().parent
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+ALLOWED_UPLOAD_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+    "application/pdf": ".pdf",
+}
 
 app = FastAPI(title="Records")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
@@ -53,6 +62,48 @@ def on_startup() -> None:
 
 def redirect(path: str) -> RedirectResponse:
     return RedirectResponse(path, status_code=303)
+
+
+def is_image_attachment(entry) -> bool:
+    return bool(entry.document_content_type and entry.document_content_type.startswith("image/"))
+
+
+templates.env.globals["is_image_attachment"] = is_image_attachment
+
+
+def save_upload(upload: UploadFile | None) -> tuple[str, str, str] | None:
+    if upload is None or not upload.filename:
+        return None
+
+    content_type = upload.content_type or ""
+    suffix = ALLOWED_UPLOAD_TYPES.get(content_type)
+    if suffix is None:
+        raise HTTPException(status_code=400, detail="Upload must be a JPG, PNG, WebP, GIF, or PDF file")
+
+    stored_name = f"{uuid4().hex}{suffix}"
+    target = UPLOAD_DIR / stored_name
+    size = 0
+    too_large = False
+    try:
+        with target.open("wb") as output:
+            while chunk := upload.file.read(1024 * 1024):
+                size += len(chunk)
+                if size > MAX_UPLOAD_SIZE:
+                    too_large = True
+                    break
+                output.write(chunk)
+    finally:
+        upload.file.close()
+    if too_large:
+        target.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="Upload must be 10 MB or smaller")
+
+    return stored_name, Path(upload.filename).name, content_type
+
+
+def remove_upload(filename: str) -> None:
+    if filename:
+        (UPLOAD_DIR / filename).unlink(missing_ok=True)
 
 
 def wants_partial(request: Request) -> bool:
@@ -146,7 +197,11 @@ def update_category(
 
 @app.post("/categories/{category_id}/delete")
 def delete_category(request: Request, session: SessionDep, category_id: int):
+    category = repo.get_category(session, category_id)
+    document_filenames = [entry.document_filename for entry in category.entries if entry.document_filename] if category else []
     repo.delete_category(session, category_id)
+    for filename in document_filenames:
+        remove_upload(filename)
     if wants_partial(request):
         return Response(status_code=200)
     return redirect("/categories")
@@ -171,9 +226,11 @@ def create_entry(
     tags: Annotated[str, Form()] = "",
     source_url: Annotated[str, Form()] = "",
     image_url: Annotated[str, Form()] = "",
+    document: Annotated[UploadFile | None, File()] = None,
 ):
     if not title.strip():
         raise HTTPException(status_code=400, detail="Entry title is required")
+    saved_upload = save_upload(document)
     entry = repo.create_entry(
         session,
         category_id=category_id,
@@ -183,6 +240,9 @@ def create_entry(
         tags=tags,
         source_url=source_url,
         image_url=image_url,
+        document_filename=saved_upload[0] if saved_upload else "",
+        document_original_name=saved_upload[1] if saved_upload else "",
+        document_content_type=saved_upload[2] if saved_upload else "",
     )
     return redirect(f"/entries/{entry.id}")
 
@@ -193,6 +253,22 @@ def entry_detail(request: Request, session: SessionDep, entry_id: int):
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
     return templates.TemplateResponse(request, "entry_detail.html", {"entry": entry})
+
+
+@app.get("/entries/{entry_id}/document")
+def entry_document(session: SessionDep, entry_id: int):
+    entry = repo.get_entry(session, entry_id)
+    if entry is None or not entry.document_filename:
+        raise HTTPException(status_code=404, detail="Document not found")
+    path = UPLOAD_DIR / entry.document_filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Document file not found")
+    return FileResponse(
+        path,
+        media_type=entry.document_content_type or "application/octet-stream",
+        filename=entry.document_original_name or entry.document_filename,
+        content_disposition_type="inline",
+    )
 
 
 @app.get("/entries/{entry_id}/edit", response_class=HTMLResponse)
@@ -218,7 +294,13 @@ def update_entry(
     tags: Annotated[str, Form()] = "",
     source_url: Annotated[str, Form()] = "",
     image_url: Annotated[str, Form()] = "",
+    document: Annotated[UploadFile | None, File()] = None,
 ):
+    current_entry = repo.get_entry(session, entry_id)
+    if current_entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    old_document_filename = current_entry.document_filename
+    saved_upload = save_upload(document)
     entry = repo.update_entry(
         session,
         entry_id,
@@ -229,9 +311,14 @@ def update_entry(
         tags=tags,
         source_url=source_url,
         image_url=image_url,
+        document_filename=saved_upload[0] if saved_upload else None,
+        document_original_name=saved_upload[1] if saved_upload else None,
+        document_content_type=saved_upload[2] if saved_upload else None,
     )
     if entry is None:
         raise HTTPException(status_code=404, detail="Entry not found")
+    if saved_upload:
+        remove_upload(old_document_filename)
     return redirect(f"/entries/{entry.id}")
 
 
@@ -239,7 +326,9 @@ def update_entry(
 def delete_entry(request: Request, session: SessionDep, entry_id: int):
     entry = repo.get_entry(session, entry_id)
     category_id = entry.category_id if entry else None
+    document_filename = entry.document_filename if entry else ""
     repo.delete_entry(session, entry_id)
+    remove_upload(document_filename)
     if wants_partial(request):
         return Response(status_code=200)
     return redirect(f"/categories/{category_id}" if category_id else "/")

@@ -74,6 +74,9 @@ def create_entry(
         notes: str = "",
         source_url: str = "",
         image_url: str = "",
+        document_filename: str = "",
+        document_original_name: str = "",
+        document_content_type: str = "",
         ) -> Entry:
     """
     takes in variables from the Entry model defined in models.py and set in db.py and adds them to the records.db
@@ -87,6 +90,9 @@ def create_entry(
             notes=notes.strip(),
             source_url=source_url.strip(),
             image_url=image_url.strip(),
+            document_filename=document_filename.strip(),
+            document_original_name=document_original_name.strip(),
+            document_content_type=document_content_type.strip(),
             created_at=now,
             updated_at=now,
             )
@@ -151,6 +157,9 @@ def update_entry(
         notes: str = "",
         source_url: str = "",
         image_url: str = "",
+        document_filename: str | None = None,
+        document_original_name: str | None = None,
+        document_content_type: str | None = None,
         ) -> Entry | None:
     entry = session.get(Entry, entry_id)
     if entry is None:
@@ -163,6 +172,12 @@ def update_entry(
     entry.notes = notes.strip()
     entry.source_url = source_url.strip()
     entry.image_url = image_url.strip()
+    if document_filename is not None:
+        entry.document_filename = document_filename.strip()
+    if document_original_name is not None:
+        entry.document_original_name = document_original_name.strip()
+    if document_content_type is not None:
+        entry.document_content_type = document_content_type.strip()
     entry.updated_at = utc_now()
 
     session.add(entry)

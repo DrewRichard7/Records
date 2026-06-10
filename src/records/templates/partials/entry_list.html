@@ -1,7 +1,7 @@
 <div class="row-list">
   {% for entry in entries %}
     <div class="entry-row" id="entry-{{ entry.id }}">
-      <div>
+      <div class="entry-summary">
         <a class="entry-title" href="/entries/{{ entry.id }}">{{ entry.title }}</a>
         <span class="muted">{{ entry.creator }}</span>
         <div class="tag-strip compact">
@@ -9,6 +9,7 @@
         </div>
       </div>
       <div class="entry-meta">
+        {% if entry.document_filename %}<span class="pill">File</span>{% endif %}
         {% if entry.category %}<a href="/categories/{{ entry.category.id }}">{{ entry.category.name }}</a>{% endif %}
         <span class="muted">{{ entry.created_at|date }}</span>
         <form action="/entries/{{ entry.id }}/delete" method="post" hx-post="/entries/{{ entry.id }}/delete" hx-target="#entry-{{ entry.id }}" hx-swap="outerHTML" hx-confirm="Delete this entry?">

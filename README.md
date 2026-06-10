@@ -26,6 +26,7 @@ There is no React, Vue, Svelte, Node build step, Tailwind, Bootstrap, or NiceGUI
 - Create, edit, delete, and view categories.
 - Create, edit, delete, and view entries.
 - Store title, creator, notes, tags, source URL, and optional image URL/path.
+- Attach one image or PDF document to an entry.
 - Search entries by title, creator, notes, tags, and category.
 - Filter entries by category, creator, and tag.
 - View dense database-style entry detail pages.
@@ -73,6 +74,9 @@ Categories are broad buckets such as `Books`, `Records`, `Recipes`, `Knitting Pa
 - `tags`
 - `source_url`
 - `image_url`
+- `document_filename`
+- `document_original_name`
+- `document_content_type`
 - `created_at`
 - `updated_at`
 
@@ -125,11 +129,18 @@ The app initializes the SQLite database automatically at startup.
 ## Database location
 
 By default, Records stores data in `records.db` in the directory where you start the app.
+Uploaded documents/images are stored in an `uploads/` directory next to the database.
 
 To store the database somewhere else, set `RECORDS_DB_PATH`:
 
 ```bash
 RECORDS_DB_PATH=/home/pi/.local/share/records/records.db uv run python -m records
+```
+
+To store uploads somewhere else, set `RECORDS_UPLOAD_DIR`:
+
+```bash
+RECORDS_UPLOAD_DIR=/home/pi/.local/share/records/uploads uv run python -m records
 ```
 
 For a Raspberry Pi or other always-on server, storing the database under `~/.local/share/records/` is cleaner than keeping it in the Git checkout.
@@ -250,7 +261,7 @@ mkdir -p /home/pi/.local/share/records
 ### 5. Test manual startup
 
 ```bash
-RECORDS_DB_PATH=/home/pi/.local/share/records/records.db uv run uvicorn records.main:app --host 0.0.0.0 --port 8000
+RECORDS_DB_PATH=/home/pi/.local/share/records/records.db RECORDS_UPLOAD_DIR=/home/pi/.local/share/records/uploads uv run python -m records
 ```
 
 From another device on the same LAN, open:
@@ -288,6 +299,7 @@ ExecStart=/home/pi/.local/bin/uv run uvicorn records.main:app --host 0.0.0.0 --p
 Restart=always
 User=pi
 Environment=RECORDS_DB_PATH=/home/pi/.local/share/records/records.db
+Environment=RECORDS_UPLOAD_DIR=/home/pi/.local/share/records/uploads
 
 [Install]
 WantedBy=multi-user.target
@@ -475,11 +487,13 @@ journalctl -u records.service -n 100 --no-pager
 ## Backups
 
 Records stores data in a SQLite database file. Back up that file regularly.
+If you use document/image uploads, back up the uploads directory too.
 
 If using the example Pi path:
 
 ```bash
 cp /home/pi/.local/share/records/records.db /home/pi/records-backup-$(date +%F).db
+tar -czf /home/pi/records-uploads-backup-$(date +%F).tar.gz -C /home/pi/.local/share/records uploads
 ```
 
 For safer backups while the app may be running, use SQLite's backup command:
@@ -542,7 +556,7 @@ ss -ltnp '( sport = :8000 )'
 ## Current limitations
 
 - No authentication yet.
-- No image upload handling yet; image field is URL/path only.
+- Attachments are limited to one JPG, PNG, WebP, GIF, or PDF per entry.
 - Tags are comma-separated text, not a normalized many-to-many tag table.
 - Search uses simple SQL matching rather than full-text search.
 - Startup migrations are intentionally small and local-first, not Alembic migrations.

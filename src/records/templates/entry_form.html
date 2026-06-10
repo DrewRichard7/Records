@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-title"><h1>{{ "Edit" if entry else "New" }} Entry</h1></div>
 <section class="panel narrow">
-  <form class="record-form" action="{{ '/entries/' ~ entry.id if entry else '/entries' }}" method="post">
+  <form class="record-form" action="{{ '/entries/' ~ entry.id if entry else '/entries' }}" method="post" enctype="multipart/form-data">
     <label>Category
       <select required name="category_id">
         {% for category in categories %}
@@ -16,6 +16,12 @@
     <label>Tags <input name="tags" placeholder="comma, separated, tags" value="{{ entry.tags if entry else '' }}"></label>
     <label>Source URL <input name="source_url" type="url" value="{{ entry.source_url if entry else '' }}"></label>
     <label>Image URL or path <input name="image_url" value="{{ entry.image_url if entry else '' }}"></label>
+    <label>Document or image upload
+      <input name="document" type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf">
+      {% if entry and entry.document_filename %}
+        <span class="muted">Current file: <a href="/entries/{{ entry.id }}/document">{{ entry.document_original_name or "Uploaded document" }}</a></span>
+      {% endif %}
+    </label>
     <label>Notes <textarea name="notes" rows="10">{{ entry.notes if entry else '' }}</textarea></label>
     <div class="form-actions">
       <button type="submit">Save entry</button>

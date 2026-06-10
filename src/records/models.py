@@ -28,6 +28,9 @@ class Entry(SQLModel, table=True):
     tags: str = Field(default="", index=True)
     source_url: str = ""
     image_url: str = ""
+    document_filename: str = ""
+    document_original_name: str = ""
+    document_content_type: str = ""
     created_at: datetime = Field(default_factory=utc_now, index=True)
     updated_at: datetime = Field(default_factory=utc_now)
 

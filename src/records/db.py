@@ -14,6 +14,17 @@ def database_path() -> Path:
 DB_PATH = database_path()
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+
+def upload_dir() -> Path:
+    configured = os.environ.get("RECORDS_UPLOAD_DIR")
+    if configured:
+        return Path(configured).expanduser()
+    return DB_PATH.parent / "uploads"
+
+
+UPLOAD_DIR = upload_dir()
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
 
 def _table_columns(connection, table_name: str) -> dict[str, str]:
@@ -52,6 +63,9 @@ def _migrate_entry_table() -> None:
         if not needs_rebuild:
             _add_column_if_missing(connection, "entry", "source_url", "source_url VARCHAR NOT NULL DEFAULT ''")
             _add_column_if_missing(connection, "entry", "image_url", "image_url VARCHAR NOT NULL DEFAULT ''")
+            _add_column_if_missing(connection, "entry", "document_filename", "document_filename VARCHAR NOT NULL DEFAULT ''")
+            _add_column_if_missing(connection, "entry", "document_original_name", "document_original_name VARCHAR NOT NULL DEFAULT ''")
+            _add_column_if_missing(connection, "entry", "document_content_type", "document_content_type VARCHAR NOT NULL DEFAULT ''")
             if old_entry_columns and "category_name" in old_entry_columns:
                 _copy_legacy_entries(connection, old_entry_columns)
                 connection.execute(text("DROP TABLE entry_old"))
@@ -82,7 +96,13 @@ def _copy_legacy_entries(connection, old_columns: dict[str, str]) -> None:
         copy_columns = ["id", "title", "creator", "notes", "tags", "created_at", "updated_at"]
         target_columns_list = [name for name in copy_columns if name in old_columns]
         source_columns_list = [f"entry_old.{name}" for name in target_columns_list]
-        for optional_column in ("source_url", "image_url"):
+        for optional_column in (
+            "source_url",
+            "image_url",
+            "document_filename",
+            "document_original_name",
+            "document_content_type",
+        ):
             target_columns_list.append(optional_column)
             if optional_column in old_columns:
                 source_columns_list.append(f"COALESCE(entry_old.{optional_column}, '')")

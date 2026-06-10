@@ -4,6 +4,9 @@
 <div class="detail-grid">
   <aside class="sidebar-card">
     {% if entry.image_url %}<img class="entry-image" src="{{ entry.image_url }}" alt="">{% endif %}
+    {% if entry.document_filename and is_image_attachment(entry) %}
+      <img class="entry-image" src="/entries/{{ entry.id }}/document" alt="{{ entry.document_original_name or entry.title }}">
+    {% endif %}
     <h2>Summary</h2>
     <div class="meta-row"><span>Category</span><a href="/categories/{{ entry.category.id }}">{{ entry.category.name }}</a></div>
     <div class="meta-row"><span>Creator</span><strong>{{ entry.creator or "Unknown" }}</strong></div>
@@ -29,6 +32,7 @@
       <div class="detail-row"><span>Category</span><a href="/categories/{{ entry.category.id }}">{{ entry.category.name }}</a></div>
       <div class="detail-row"><span>Creator</span><span>{{ entry.creator or "" }}</span></div>
       <div class="detail-row"><span>Source</span><span>{% if entry.source_url %}<a href="{{ entry.source_url }}">{{ entry.source_url }}</a>{% endif %}</span></div>
+      <div class="detail-row"><span>Document</span><span>{% if entry.document_filename %}<a href="/entries/{{ entry.id }}/document">{{ entry.document_original_name or "View document" }}</a>{% endif %}</span></div>
       <div class="detail-row"><span>Created</span><span>{{ entry.created_at }}</span></div>
       <div class="detail-row"><span>Updated</span><span>{{ entry.updated_at }}</span></div>
     </div>
