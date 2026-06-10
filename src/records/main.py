@@ -1,6 +1,8 @@
 from pathlib import Path
+import os
 import socket
 from typing import Annotated
+from urllib.parse import quote
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -9,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 
+from records.auth import SESSION_MAX_AGE_SECONDS, create_session_token, session_token_is_valid, verify_password
 from records import repo
 from records.db import DB_PATH, UPLOAD_DIR, get_session, init_db
 
@@ -22,8 +25,16 @@ ALLOWED_UPLOAD_TYPES = {
     "image/gif": ".gif",
     "application/pdf": ".pdf",
 }
+PASSWORD_HASH = os.environ.get("RECORDS_PASSWORD_HASH", "")
+SESSION_SECRET = os.environ.get("RECORDS_SESSION_SECRET", "")
+AUTH_ENABLED = bool(PASSWORD_HASH)
+PUBLIC_PATHS = {"/login"}
+SESSION_COOKIE_NAME = "records_session"
 
 app = FastAPI(title="Records")
+if AUTH_ENABLED:
+    if not SESSION_SECRET:
+        raise RuntimeError("RECORDS_SESSION_SECRET is required when RECORDS_PASSWORD_HASH is set")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 templates.env.filters["date"] = repo.format_datetime
@@ -53,6 +64,43 @@ def session_dep():
 
 
 SessionDep = Annotated[Session, Depends(session_dep)]
+
+
+def auth_is_public_path(path: str) -> bool:
+    return path in PUBLIC_PATHS or path.startswith("/static/")
+
+
+def safe_next_url(value: str | None) -> str:
+    if value and value.startswith("/") and not value.startswith("//"):
+        return value
+    return "/"
+
+
+def request_is_authenticated(request: Request) -> bool:
+    return session_token_is_valid(request.cookies.get(SESSION_COOKIE_NAME), SESSION_SECRET)
+
+
+def set_auth_cookie(response: Response) -> None:
+    response.set_cookie(
+        SESSION_COOKIE_NAME,
+        create_session_token(SESSION_SECRET),
+        max_age=SESSION_MAX_AGE_SECONDS,
+        httponly=True,
+        samesite="strict",
+        secure=os.environ.get("RECORDS_COOKIE_SECURE", "0") == "1",
+    )
+
+
+@app.middleware("http")
+async def require_login(request: Request, call_next):
+    if not AUTH_ENABLED or auth_is_public_path(request.url.path):
+        return await call_next(request)
+    if request_is_authenticated(request):
+        return await call_next(request)
+    next_url = safe_next_url(str(request.url.path))
+    if request.url.query:
+        next_url = f"{next_url}?{request.url.query}"
+    return redirect(f"/login?next={quote(next_url, safe='')}")
 
 
 @app.on_event("startup")
@@ -108,6 +156,40 @@ def remove_upload(filename: str) -> None:
 
 def wants_partial(request: Request) -> bool:
     return request.headers.get("HX-Request") == "true"
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_form(request: Request, next: str = "/"):
+    if AUTH_ENABLED and request_is_authenticated(request):
+        return redirect(safe_next_url(next))
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        {"error": "", "next": safe_next_url(next), "auth_enabled": AUTH_ENABLED},
+    )
+
+
+@app.post("/login")
+def login(request: Request, password: Annotated[str, Form()], next: Annotated[str, Form()] = "/"):
+    if not AUTH_ENABLED:
+        return redirect("/")
+    if verify_password(password, PASSWORD_HASH):
+        response = redirect(safe_next_url(next))
+        set_auth_cookie(response)
+        return response
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        {"error": "That password did not match.", "next": safe_next_url(next), "auth_enabled": AUTH_ENABLED},
+        status_code=401,
+    )
+
+
+@app.post("/logout")
+def logout(request: Request):
+    response = redirect("/login")
+    response.delete_cookie(SESSION_COOKIE_NAME)
+    return response
 
 
 @app.get("/", response_class=HTMLResponse)

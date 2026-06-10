@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Log in - Records{% endblock %}
+{% block content %}
+<section class="panel auth-panel">
+  <p class="eyebrow">Private archive</p>
+  <h1>Log in</h1>
+  {% if not auth_enabled %}
+    <p class="error">Authentication is not configured. Set RECORDS_PASSWORD_HASH and RECORDS_SESSION_SECRET to enable login.</p>
+  {% endif %}
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <form class="record-form" action="/login" method="post">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label>Password
+      <input required name="password" type="password" autocomplete="current-password" autofocus>
+    </label>
+    <div class="form-actions">
+      <button type="submit">Log in</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
