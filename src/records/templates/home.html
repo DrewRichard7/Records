@@ -1,26 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Records{% endblock %}
 {% block content %}
-<section class="hero panel">
+<section class="search-console panel">
   <div>
-    <p class="eyebrow">Personal catalog</p>
+    <p class="eyebrow">Personal archive terminal</p>
     <h1>Records</h1>
-    <p class="muted">A fast local memory palace for records, books, recipes, tools, patterns, and collections.</p>
+    <p class="muted">Search titles, categories, tags, creators, notes, links, and uploaded file names.</p>
   </div>
-  <div class="actions">
-    <a class="button" href="/entries/new">Create entry</a>
-    <a class="button secondary" href="/categories/new">Create category</a>
-  </div>
-</section>
-
-<section class="panel">
-  <h2>Search</h2>
-  <form class="filterbar" action="/search" method="get" hx-get="/search" hx-target="#home-results" hx-trigger="keyup changed delay:250ms from:input, submit">
-    <input type="search" name="q" placeholder="Search title, creator, notes, tags, category" value="{{ query }}" autofocus>
+  <form class="primary-search" action="/search" method="get" hx-get="/search" hx-target="#home-results" hx-trigger="keyup changed delay:150ms from:input, search, submit">
+    <input class="search-input" type="search" name="q" placeholder="Search archive..." value="{{ query }}" autocomplete="off" autocapitalize="none" spellcheck="false" autofocus data-primary-search>
     <button type="submit">Search</button>
   </form>
   <div id="home-results" class="search-preview"></div>
 </section>
+
+<div class="quick-actions">
+  <a class="button" href="/entries/new">Create entry</a>
+  <a class="button secondary" href="/categories/new">Create category</a>
+  <a class="button secondary" href="/search">Advanced search</a>
+</div>
 
 <div class="two-column">
   <section class="panel">
@@ -46,7 +44,7 @@
   <section class="panel">
     <div class="section-heading">
       <h2>Recently Added</h2>
-      <a href="/search">Browse</a>
+      <a href="/search">Browse all</a>
     </div>
     {% set entries = recent_entries %}
     {% include "partials/entry_list.html" %}

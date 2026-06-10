@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import func, or_
+from sqlalchemy import case, func, or_
 from sqlmodel import Session, col, select
 
 from records.models import Category, Entry, utc_now
@@ -127,21 +127,40 @@ def list_entries(
     term = search.strip()
     if term:
         pattern = f"%{term}%"
+        starts_pattern = f"{term}%"
         statement = statement.where(
                 or_(
                     col(Entry.title).ilike(pattern),
                     col(Entry.creator).ilike(pattern),
                     col(Entry.tags).ilike(pattern),
                     col(Entry.notes).ilike(pattern),
+                    col(Entry.source_url).ilike(pattern),
+                    col(Entry.document_original_name).ilike(pattern),
                     col(Category.name).ilike(pattern),
                     )
                 )
 
-    sort_column = SORT_COLUMNS.get(sort_by, Entry.title)
-    if sort_by == "Created":
-        statement = statement.order_by(sort_column.desc())
+        title_lower = func.lower(Entry.title)
+        term_lower = term.lower()
+        rank = case(
+            (title_lower == term_lower, 0),
+            (col(Entry.title).ilike(starts_pattern), 1),
+            (col(Category.name).ilike(pattern), 2),
+            (col(Entry.tags).ilike(pattern), 3),
+            (col(Entry.creator).ilike(pattern), 4),
+            (col(Entry.title).ilike(pattern), 5),
+            (col(Entry.document_original_name).ilike(pattern), 6),
+            (col(Entry.source_url).ilike(pattern), 7),
+            (col(Entry.notes).ilike(pattern), 8),
+            else_=9,
+        )
+        statement = statement.order_by(rank, Entry.title, Entry.updated_at.desc())
     else:
-        statement = statement.order_by(sort_column, Entry.title)
+        sort_column = SORT_COLUMNS.get(sort_by, Entry.title)
+        if sort_by == "Created":
+            statement = statement.order_by(sort_column.desc())
+        else:
+            statement = statement.order_by(sort_column, Entry.title)
 
     return list(session.exec(statement))
 

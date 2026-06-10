@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Search - Records{% endblock %}
 {% block content %}
-<div class="page-title">
+<div class="page-title search-page-title">
   <div>
     <h1>Search</h1>
-    <p class="muted">Search title, creator, notes, tags, and category.</p>
+    <p class="muted">Ranked archive search across titles, categories, creators, tags, notes, links, and file names.</p>
   </div>
 </div>
-<section class="panel">
+<section class="panel search-console compact">
   <form class="filterbar wrap" action="/search" method="get" hx-get="/search" hx-target="#search-results" hx-trigger="keyup changed delay:250ms from:input, change, submit">
-    <input type="search" name="q" value="{{ query }}" placeholder="Search records">
+    <input class="search-input" type="search" name="q" value="{{ query }}" placeholder="Search archive..." autocomplete="off" autocapitalize="none" spellcheck="false" data-primary-search>
     <select name="category_id">
       <option value="">All categories</option>
       {% for category in categories %}<option value="{{ category.id }}" {% if category.id == category_id %}selected{% endif %}>{{ category.name }}</option>{% endfor %}
