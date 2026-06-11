@@ -3,6 +3,7 @@ from email.message import EmailMessage
 import os
 import socket
 import smtplib
+import ssl
 from typing import Annotated
 from urllib.parse import quote
 from uuid import uuid4
@@ -49,6 +50,7 @@ SMTP_PASSWORD = os.environ.get("RECORDS_SMTP_PASSWORD", "")
 SMTP_FROM_EMAIL = os.environ.get("RECORDS_SMTP_FROM_EMAIL", SMTP_USERNAME or RECOVERY_EMAIL)
 SMTP_USE_TLS = os.environ.get("RECORDS_SMTP_TLS", "1") != "0"
 SMTP_USE_SSL = os.environ.get("RECORDS_SMTP_SSL", "0") == "1"
+SMTP_VERIFY_TLS = os.environ.get("RECORDS_SMTP_VERIFY_TLS", "1") != "0"
 PUBLIC_URL = os.environ.get("RECORDS_PUBLIC_URL", "").rstrip("/")
 
 app = FastAPI(title="Records")
@@ -149,7 +151,8 @@ def send_password_reset_email(to_email: str, reset_url: str) -> None:
     smtp_class = smtplib.SMTP_SSL if SMTP_USE_SSL else smtplib.SMTP
     with smtp_class(SMTP_HOST, SMTP_PORT, timeout=15) as smtp:
         if SMTP_USE_TLS and not SMTP_USE_SSL:
-            smtp.starttls()
+            context = ssl.create_default_context() if SMTP_VERIFY_TLS else ssl._create_unverified_context()
+            smtp.starttls(context=context)
         if SMTP_USERNAME or SMTP_PASSWORD:
             smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
         smtp.send_message(message)
