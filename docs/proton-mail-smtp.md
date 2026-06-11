@@ -11,13 +11,30 @@ These instructions assume:
 - Records is running on a Raspberry Pi as the `pi` user.
 - Records is reachable through Tailscale HTTPS, for example `https://raspberrypi.<tailnet-name>.ts.net`.
 
+## Raspberry Pi architecture check
+
+Before downloading Bridge, check the Pi architecture:
+
+```bash
+uname -m
+dpkg --print-architecture
+```
+
+Do not install an `amd64` package on a Raspberry Pi. `amd64` is for Intel/AMD x86_64 machines, not ARM Raspberry Pi boards. A Pi Zero 2 W usually reports an ARM architecture such as `armhf`, `arm64`, or `aarch64`.
+
+If Proton does not provide a Bridge package for your exact Pi architecture, Bridge cannot be installed directly on that Pi with apt. In that case, use one of these options:
+
+- Use Gmail, Fastmail, or another SMTP provider just for Records password reset emails.
+- Run Proton Mail Bridge on an always-on x86_64 Linux machine instead of the Pi.
+- Skip email reset and reset the password manually over SSH by generating a new `RECORDS_PASSWORD_HASH` and restarting `records.service`.
+
 ## 1. Install Proton Mail Bridge
 
 Follow Proton's Linux install instructions for your Raspberry Pi OS:
 
 https://proton.me/support/bridge-for-linux
 
-Proton provides packages for common Linux families. On Raspberry Pi OS, use the Debian/Ubuntu-style instructions if your Pi OS architecture is supported by Proton's package.
+Proton provides packages for common Linux families. On Raspberry Pi OS, use the Debian/Ubuntu-style instructions only if your Pi OS architecture is supported by Proton's package.
 
 Proton notes that Linux Bridge needs a secret-service password manager such as GNOME Keyring or `pass`. On a headless Pi, `pass` is usually the more practical route. Follow Proton's current instructions if their package prompts you for this during setup.
 
