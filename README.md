@@ -205,7 +205,7 @@ Environment=RECORDS_SMTP_PASSWORD=gmail-app-password
 Environment=RECORDS_SMTP_FROM_EMAIL=you@gmail.com
 ```
 
-For Gmail, enable 2-Step Verification on the Google account and create an app password. Use that app password here, not your normal Google account password.
+For Gmail, enable 2-Step Verification on the Google account and create an app password. Use that app password here, not your normal Google account password. See [docs/gmail-smtp.md](docs/gmail-smtp.md) for detailed Gmail setup.
 
 For providers that require implicit SSL on port 465, use:
 
