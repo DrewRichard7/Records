@@ -1,6 +1,8 @@
 from pathlib import Path
+from email.message import EmailMessage
 import os
 import socket
+import smtplib
 from typing import Annotated
 from urllib.parse import quote
 from uuid import uuid4
@@ -11,7 +13,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 
-from records.auth import SESSION_MAX_AGE_SECONDS, create_session_token, session_token_is_valid, verify_password
+from records.auth import (
+    SESSION_MAX_AGE_SECONDS,
+    create_password_reset_token,
+    create_session_token,
+    hash_password,
+    password_reset_token_is_valid,
+    session_token_is_valid,
+    verify_password,
+)
 from records import repo
 from records.db import DB_PATH, UPLOAD_DIR, get_session, init_db
 
@@ -28,13 +38,23 @@ ALLOWED_UPLOAD_TYPES = {
 PASSWORD_HASH = os.environ.get("RECORDS_PASSWORD_HASH", "")
 SESSION_SECRET = os.environ.get("RECORDS_SESSION_SECRET", "")
 AUTH_ENABLED = bool(PASSWORD_HASH)
-PUBLIC_PATHS = {"/login"}
+PUBLIC_PATHS = {"/login", "/forgot-password", "/reset-password"}
 SESSION_COOKIE_NAME = "records_session"
+PASSWORD_SETTING_KEY = "password_hash"
+RECOVERY_EMAIL = os.environ.get("RECORDS_RECOVERY_EMAIL", "").strip().lower()
+SMTP_HOST = os.environ.get("RECORDS_SMTP_HOST", "")
+SMTP_PORT = int(os.environ.get("RECORDS_SMTP_PORT", "587"))
+SMTP_USERNAME = os.environ.get("RECORDS_SMTP_USERNAME", "")
+SMTP_PASSWORD = os.environ.get("RECORDS_SMTP_PASSWORD", "")
+SMTP_FROM_EMAIL = os.environ.get("RECORDS_SMTP_FROM_EMAIL", SMTP_USERNAME or RECOVERY_EMAIL)
+SMTP_USE_TLS = os.environ.get("RECORDS_SMTP_TLS", "1") != "0"
+SMTP_USE_SSL = os.environ.get("RECORDS_SMTP_SSL", "0") == "1"
+PUBLIC_URL = os.environ.get("RECORDS_PUBLIC_URL", "").rstrip("/")
 
 app = FastAPI(title="Records")
-if AUTH_ENABLED:
+if AUTH_ENABLED or RECOVERY_EMAIL:
     if not SESSION_SECRET:
-        raise RuntimeError("RECORDS_SESSION_SECRET is required when RECORDS_PASSWORD_HASH is set")
+        raise RuntimeError("RECORDS_SESSION_SECRET is required when auth or password reset email is configured")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 templates.env.filters["date"] = repo.format_datetime
@@ -89,6 +109,50 @@ def set_auth_cookie(response: Response) -> None:
         samesite="strict",
         secure=os.environ.get("RECORDS_COOKIE_SECURE", "0") == "1",
     )
+
+
+def current_password_hash(session: Session) -> str:
+    return repo.get_setting(session, PASSWORD_SETTING_KEY) or PASSWORD_HASH
+
+
+def recovery_email_is_configured() -> bool:
+    return bool(RECOVERY_EMAIL and SMTP_HOST and SMTP_FROM_EMAIL)
+
+
+def normalize_email(value: str) -> str:
+    return value.strip().lower()
+
+
+def absolute_url(request: Request, path: str) -> str:
+    base_url = PUBLIC_URL or str(request.base_url).rstrip("/")
+    return f"{base_url}{path}"
+
+
+def send_password_reset_email(to_email: str, reset_url: str) -> None:
+    message = EmailMessage()
+    message["Subject"] = "Reset your Records password"
+    message["From"] = SMTP_FROM_EMAIL
+    message["To"] = to_email
+    message.set_content(
+        "\n".join(
+            [
+                "Use this link to reset your Records password:",
+                "",
+                reset_url,
+                "",
+                "This link expires in 30 minutes.",
+                "If you did not request this, you can ignore this email.",
+            ]
+        )
+    )
+
+    smtp_class = smtplib.SMTP_SSL if SMTP_USE_SSL else smtplib.SMTP
+    with smtp_class(SMTP_HOST, SMTP_PORT, timeout=15) as smtp:
+        if SMTP_USE_TLS and not SMTP_USE_SSL:
+            smtp.starttls()
+        if SMTP_USERNAME or SMTP_PASSWORD:
+            smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+        smtp.send_message(message)
 
 
 @app.middleware("http")
@@ -170,10 +234,10 @@ def login_form(request: Request, next: str = "/"):
 
 
 @app.post("/login")
-def login(request: Request, password: Annotated[str, Form()], next: Annotated[str, Form()] = "/"):
+def login(request: Request, session: SessionDep, password: Annotated[str, Form()], next: Annotated[str, Form()] = "/"):
     if not AUTH_ENABLED:
         return redirect("/")
-    if verify_password(password, PASSWORD_HASH):
+    if verify_password(password, current_password_hash(session)):
         response = redirect(safe_next_url(next))
         set_auth_cookie(response)
         return response
@@ -189,6 +253,99 @@ def login(request: Request, password: Annotated[str, Form()], next: Annotated[st
 def logout(request: Request):
     response = redirect("/login")
     response.delete_cookie(SESSION_COOKIE_NAME)
+    return response
+
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_form(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "forgot_password.html",
+        {"error": "", "sent": False, "email_configured": recovery_email_is_configured()},
+    )
+
+
+@app.post("/forgot-password", response_class=HTMLResponse)
+def forgot_password(request: Request, email: Annotated[str, Form()]):
+    requested_email = normalize_email(email)
+    if recovery_email_is_configured() and requested_email == RECOVERY_EMAIL:
+        token = create_password_reset_token(SESSION_SECRET, RECOVERY_EMAIL)
+        reset_url = absolute_url(request, f"/reset-password?token={quote(token, safe='')}")
+        try:
+            send_password_reset_email(RECOVERY_EMAIL, reset_url)
+        except (OSError, smtplib.SMTPException):
+            return templates.TemplateResponse(
+                request,
+                "forgot_password.html",
+                {
+                    "error": "The reset email could not be sent. Check the server mail settings.",
+                    "sent": False,
+                    "email_configured": True,
+                },
+                status_code=500,
+            )
+    if recovery_email_is_configured():
+        return templates.TemplateResponse(
+            request,
+            "forgot_password.html",
+            {"error": "", "sent": True, "email_configured": True},
+        )
+    return templates.TemplateResponse(
+        request,
+        "forgot_password.html",
+        {
+            "error": "Password reset email is not configured on this server.",
+            "sent": False,
+            "email_configured": False,
+        },
+        status_code=400,
+    )
+
+
+@app.get("/reset-password", response_class=HTMLResponse)
+def reset_password_form(request: Request, token: str = ""):
+    valid = bool(RECOVERY_EMAIL and password_reset_token_is_valid(token, SESSION_SECRET, RECOVERY_EMAIL))
+    return templates.TemplateResponse(
+        request,
+        "reset_password.html",
+        {"error": "" if valid else "This reset link is invalid or expired.", "token": token, "valid": valid},
+        status_code=200 if valid else 400,
+    )
+
+
+@app.post("/reset-password", response_class=HTMLResponse)
+def reset_password(
+    request: Request,
+    session: SessionDep,
+    token: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    confirm_password: Annotated[str, Form()],
+):
+    valid = bool(RECOVERY_EMAIL and password_reset_token_is_valid(token, SESSION_SECRET, RECOVERY_EMAIL))
+    if not valid:
+        return templates.TemplateResponse(
+            request,
+            "reset_password.html",
+            {"error": "This reset link is invalid or expired.", "token": token, "valid": False},
+            status_code=400,
+        )
+    if len(password) < 8:
+        return templates.TemplateResponse(
+            request,
+            "reset_password.html",
+            {"error": "Use at least 8 characters.", "token": token, "valid": True},
+            status_code=400,
+        )
+    if password != confirm_password:
+        return templates.TemplateResponse(
+            request,
+            "reset_password.html",
+            {"error": "The passwords did not match.", "token": token, "valid": True},
+            status_code=400,
+        )
+    repo.set_setting(session, PASSWORD_SETTING_KEY, hash_password(password))
+    response = redirect("/")
+    set_auth_cookie(response)
     return response
 
 

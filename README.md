@@ -163,6 +163,7 @@ uv run python -m records.auth 'choose-a-long-password'
 ```
 
 The command prints a value that starts with `pbkdf2_sha256$...`. Store that hash, not the raw password, in your service configuration.
+The text inside the quotes is the password you will type into the login form.
 
 Generate a session secret:
 
@@ -185,6 +186,33 @@ RECORDS_COOKIE_SECURE=1
 ```
 
 That marks the login cookie as HTTPS-only. Leave it unset for plain local HTTP testing.
+
+### Password reset email
+
+Records cannot email your current password back to you because only a password hash is stored. Instead, it can email a reset link that lets you choose a new password.
+
+The reset form asks for an email address. A reset email is sent only when that address matches `RECORDS_RECOVERY_EMAIL`; the page always uses a generic response so someone else cannot use it to discover your recovery address.
+
+Configure SMTP in the service environment:
+
+```ini
+Environment=RECORDS_RECOVERY_EMAIL=you@example.com
+Environment=RECORDS_PUBLIC_URL=https://raspberrypi.<tailnet-name>.ts.net
+Environment=RECORDS_SMTP_HOST=smtp.example.com
+Environment=RECORDS_SMTP_PORT=587
+Environment=RECORDS_SMTP_USERNAME=you@example.com
+Environment=RECORDS_SMTP_PASSWORD=mail-app-password
+Environment=RECORDS_SMTP_FROM_EMAIL=you@example.com
+```
+
+For providers that require implicit SSL on port 465, add:
+
+```ini
+Environment=RECORDS_SMTP_PORT=465
+Environment=RECORDS_SMTP_SSL=1
+```
+
+After a successful reset, the new password hash is stored in the SQLite database. `RECORDS_PASSWORD_HASH` remains the initial fallback password hash.
 
 ## Access from another device on your LAN
 
@@ -338,6 +366,13 @@ Environment=RECORDS_UPLOAD_DIR=/home/pi/.local/share/records/uploads
 Environment=RECORDS_PASSWORD_HASH=pbkdf2_sha256$...
 Environment=RECORDS_SESSION_SECRET=long-random-secret
 Environment=RECORDS_COOKIE_SECURE=1
+Environment=RECORDS_RECOVERY_EMAIL=you@example.com
+Environment=RECORDS_PUBLIC_URL=https://raspberrypi.<tailnet-name>.ts.net
+Environment=RECORDS_SMTP_HOST=smtp.example.com
+Environment=RECORDS_SMTP_PORT=587
+Environment=RECORDS_SMTP_USERNAME=you@example.com
+Environment=RECORDS_SMTP_PASSWORD=mail-app-password
+Environment=RECORDS_SMTP_FROM_EMAIL=you@example.com
 
 [Install]
 WantedBy=multi-user.target

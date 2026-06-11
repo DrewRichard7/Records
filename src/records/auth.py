@@ -15,6 +15,7 @@ ALGORITHM = "pbkdf2_sha256"
 ITERATIONS = 600_000
 SALT_BYTES = 16
 SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
+PASSWORD_RESET_MAX_AGE_SECONDS = 60 * 30
 
 
 def _b64encode(value: bytes) -> str:
@@ -52,9 +53,9 @@ def create_session_token(secret: str, max_age: int = SESSION_MAX_AGE_SECONDS) ->
     return f"{encoded_payload}.{_b64encode(signature)}"
 
 
-def session_token_is_valid(token: str | None, secret: str) -> bool:
+def _read_signed_payload(token: str | None, secret: str) -> dict | None:
     if not token or "." not in token:
-        return False
+        return None
     encoded_payload, encoded_signature = token.split(".", 1)
     expected_signature = hmac.new(
         secret.encode("utf-8"),
@@ -65,10 +66,38 @@ def session_token_is_valid(token: str | None, secret: str) -> bool:
         actual_signature = _b64decode(encoded_signature)
         payload = json.loads(_b64decode(encoded_payload))
     except (ValueError, TypeError):
-        return False
+        return None
     if not hmac.compare_digest(actual_signature, expected_signature):
-        return False
-    return bool(payload.get("authenticated")) and int(payload.get("expires_at", 0)) >= int(time.time())
+        return None
+    if int(payload.get("expires_at", 0)) < int(time.time()):
+        return None
+    return payload
+
+
+def session_token_is_valid(token: str | None, secret: str) -> bool:
+    payload = _read_signed_payload(token, secret)
+    return bool(payload and payload.get("authenticated"))
+
+
+def create_password_reset_token(
+    secret: str,
+    email: str,
+    max_age: int = PASSWORD_RESET_MAX_AGE_SECONDS,
+) -> str:
+    payload = {
+        "purpose": "password_reset",
+        "email": email,
+        "expires_at": int(time.time()) + max_age,
+        "nonce": secrets.token_urlsafe(12),
+    }
+    encoded_payload = _b64encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    signature = hmac.new(secret.encode("utf-8"), encoded_payload.encode("ascii"), hashlib.sha256).digest()
+    return f"{encoded_payload}.{_b64encode(signature)}"
+
+
+def password_reset_token_is_valid(token: str | None, secret: str, email: str) -> bool:
+    payload = _read_signed_payload(token, secret)
+    return bool(payload and payload.get("purpose") == "password_reset" and payload.get("email") == email)
 
 
 def main() -> None:
