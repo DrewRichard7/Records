@@ -30,6 +30,7 @@ There is no React, Vue, Svelte, Node build step, Tailwind, Bootstrap, or NiceGUI
 - Search entries by title, creator, notes, tags, and category.
 - Filter entries by category, creator, and tag.
 - View dense database-style entry detail pages.
+- Optional single-password login and logout.
 - Use from a desktop browser or phone browser.
 - Add to iPhone home screen with the included app icon.
 - Store data in a local SQLite database.
@@ -150,6 +151,72 @@ Create that directory if needed:
 ```bash
 mkdir -p /home/pi/.local/share/records
 ```
+
+## Password login
+
+Records can protect the app with a single shared password. Authentication is enabled when `RECORDS_PASSWORD_HASH` is set.
+
+Generate a password hash:
+
+```bash
+uv run python -m records.auth 'choose-a-long-password'
+```
+
+The command prints a value that starts with `pbkdf2_sha256$...`. Store that hash, not the raw password, in your service configuration.
+The text inside the quotes is the password you will type into the login form.
+
+Generate a session secret:
+
+```bash
+uv run python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+The session secret signs the browser cookie that keeps you logged in. Use a different value from your password hash and keep it private.
+
+Run locally with auth enabled:
+
+```bash
+RECORDS_PASSWORD_HASH='pbkdf2_sha256$...' RECORDS_SESSION_SECRET='long-random-secret' uv run python -m records
+```
+
+If you serve Records over HTTPS with Tailscale Serve, also set:
+
+```bash
+RECORDS_COOKIE_SECURE=1
+```
+
+That marks the login cookie as HTTPS-only. Leave it unset for plain local HTTP testing.
+
+### Password reset email
+
+Records cannot email your current password back to you because only a password hash is stored. Instead, it can email a reset link that lets you choose a new password.
+
+The reset form asks for an email address. A reset email is sent only when that address matches `RECORDS_RECOVERY_EMAIL`; the page always uses a generic response so someone else cannot use it to discover your recovery address.
+
+Configure SMTP in the service environment. Gmail with an app password is the simplest common option:
+
+```ini
+Environment=RECORDS_RECOVERY_EMAIL=you@gmail.com
+Environment=RECORDS_PUBLIC_URL=https://raspberrypi.<tailnet-name>.ts.net
+Environment=RECORDS_SMTP_HOST=smtp.gmail.com
+Environment=RECORDS_SMTP_PORT=587
+Environment=RECORDS_SMTP_USERNAME=you@gmail.com
+Environment=RECORDS_SMTP_PASSWORD=gmail-app-password
+Environment=RECORDS_SMTP_FROM_EMAIL=you@gmail.com
+```
+
+For Gmail, enable 2-Step Verification on the Google account and create an app password. Use that app password here, not your normal Google account password. See [docs/gmail-smtp.md](docs/gmail-smtp.md) for detailed Gmail setup.
+
+For providers that require implicit SSL on port 465, use:
+
+```ini
+Environment=RECORDS_SMTP_PORT=465
+Environment=RECORDS_SMTP_SSL=1
+```
+
+For Proton Mail, use Proton Mail Bridge and see [docs/proton-mail-smtp.md](docs/proton-mail-smtp.md).
+
+After a successful reset, the new password hash is stored in the SQLite database. `RECORDS_PASSWORD_HASH` remains the initial fallback password hash.
 
 ## Access from another device on your LAN
 
@@ -300,6 +367,16 @@ Restart=always
 User=pi
 Environment=RECORDS_DB_PATH=/home/pi/.local/share/records/records.db
 Environment=RECORDS_UPLOAD_DIR=/home/pi/.local/share/records/uploads
+Environment=RECORDS_PASSWORD_HASH=pbkdf2_sha256$...
+Environment=RECORDS_SESSION_SECRET=long-random-secret
+Environment=RECORDS_COOKIE_SECURE=1
+Environment=RECORDS_RECOVERY_EMAIL=you@gmail.com
+Environment=RECORDS_PUBLIC_URL=https://raspberrypi.<tailnet-name>.ts.net
+Environment=RECORDS_SMTP_HOST=smtp.gmail.com
+Environment=RECORDS_SMTP_PORT=587
+Environment=RECORDS_SMTP_USERNAME=you@gmail.com
+Environment=RECORDS_SMTP_PASSWORD=gmail-app-password
+Environment=RECORDS_SMTP_FROM_EMAIL=you@gmail.com
 
 [Install]
 WantedBy=multi-user.target
@@ -555,7 +632,7 @@ ss -ltnp '( sport = :8000 )'
 
 ## Current limitations
 
-- No authentication yet.
+- Authentication is currently a single shared password, not per-user accounts.
 - Attachments are limited to one JPG, PNG, WebP, GIF, or PDF per entry.
 - Tags are comma-separated text, not a normalized many-to-many tag table.
 - Search uses simple SQL matching rather than full-text search.
@@ -563,7 +640,7 @@ ss -ltnp '( sport = :8000 )'
 
 ## Suggested future improvements
 
-- Add optional login/password protection.
+- Add passkey/WebAuthn login for Face ID or Touch ID.
 - Add image upload and thumbnail handling.
 - Add export/import tools.
 - Add SQLite full-text search.

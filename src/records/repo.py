@@ -3,13 +3,31 @@ from datetime import datetime
 from sqlalchemy import case, func, or_
 from sqlmodel import Session, col, select
 
-from records.models import Category, Entry, utc_now
+from records.models import AppSetting, Category, Entry, utc_now
 
 SORT_COLUMNS = {
         "Title": Entry.title,
         "Creator": Entry.creator,
         "Created": Entry.created_at,
         }
+
+
+def get_setting(session: Session, key: str) -> str:
+    setting = session.get(AppSetting, key)
+    return setting.value if setting else ""
+
+
+def set_setting(session: Session, key: str, value: str) -> AppSetting:
+    setting = session.get(AppSetting, key)
+    if setting is None:
+        setting = AppSetting(key=key, value=value.strip(), updated_at=utc_now())
+    else:
+        setting.value = value.strip()
+        setting.updated_at = utc_now()
+    session.add(setting)
+    session.commit()
+    session.refresh(setting)
+    return setting
 
 def create_category(session: Session, name: str, description: str = "") -> Category:
     """Create a new category from variables defined in models.py and set in db.py"""

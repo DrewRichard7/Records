@@ -35,3 +35,9 @@ class Entry(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utc_now)
 
     category: Category | None = Relationship(back_populates="entries")
+
+
+class AppSetting(SQLModel, table=True):
+    key: str = Field(primary_key=True)
+    value: str = ""
+    updated_at: datetime = Field(default_factory=utc_now)
