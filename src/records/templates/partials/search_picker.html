@@ -1,0 +1,20 @@
+{% for entry in entries %}
+  <a class="picker-row {% if loop.first %}active{% endif %}" href="/entries/{{ entry.id }}">
+    <span>
+      <strong>{{ entry.title }}</strong>
+      <span class="muted block">
+        {% if entry.category %}{{ entry.category.name }}{% else %}Uncategorized{% endif %}
+        {% if entry.creator %} · {{ entry.creator }}{% endif %}
+      </span>
+    </span>
+    {% if entry.document_filename %}
+      <span class="pill">File</span>
+    {% elif entry.tags %}
+      <span class="pill">{{ split_tags(entry.tags)[0] }}</span>
+    {% else %}
+      <span class="pill">{{ entry.created_at|date }}</span>
+    {% endif %}
+  </a>
+{% else %}
+  <p class="muted picker-empty">No entries found.</p>
+{% endfor %}

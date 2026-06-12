@@ -38,7 +38,6 @@ ALLOWED_UPLOAD_TYPES = {
 }
 PASSWORD_HASH = os.environ.get("RECORDS_PASSWORD_HASH", "")
 SESSION_SECRET = os.environ.get("RECORDS_SESSION_SECRET", "")
-AUTH_ENABLED = bool(PASSWORD_HASH)
 PUBLIC_PATHS = {"/login", "/forgot-password", "/reset-password"}
 SESSION_COOKIE_NAME = "records_session"
 PASSWORD_SETTING_KEY = "password_hash"
@@ -54,7 +53,7 @@ SMTP_VERIFY_TLS = os.environ.get("RECORDS_SMTP_VERIFY_TLS", "1") != "0"
 PUBLIC_URL = os.environ.get("RECORDS_PUBLIC_URL", "").rstrip("/")
 
 app = FastAPI(title="Records")
-if AUTH_ENABLED or RECOVERY_EMAIL:
+if PASSWORD_HASH or RECOVERY_EMAIL:
     if not SESSION_SECRET:
         raise RuntimeError("RECORDS_SESSION_SECRET is required when auth or password reset email is configured")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
@@ -117,6 +116,10 @@ def current_password_hash(session: Session) -> str:
     return repo.get_setting(session, PASSWORD_SETTING_KEY) or PASSWORD_HASH
 
 
+def auth_is_enabled(session: Session) -> bool:
+    return bool(current_password_hash(session))
+
+
 def recovery_email_is_configured() -> bool:
     return bool(RECOVERY_EMAIL and SMTP_HOST and SMTP_FROM_EMAIL)
 
@@ -160,8 +163,11 @@ def send_password_reset_email(to_email: str, reset_url: str) -> None:
 
 @app.middleware("http")
 async def require_login(request: Request, call_next):
-    if not AUTH_ENABLED or auth_is_public_path(request.url.path):
+    if auth_is_public_path(request.url.path):
         return await call_next(request)
+    with get_session() as session:
+        if not auth_is_enabled(session):
+            return await call_next(request)
     if request_is_authenticated(request):
         return await call_next(request)
     next_url = safe_next_url(str(request.url.path))
@@ -173,6 +179,9 @@ async def require_login(request: Request, call_next):
 @app.on_event("startup")
 def on_startup() -> None:
     init_db()
+    with get_session() as session:
+        if auth_is_enabled(session) and not SESSION_SECRET:
+            raise RuntimeError("RECORDS_SESSION_SECRET is required when auth or password reset email is configured")
 
 
 def redirect(path: str) -> RedirectResponse:
@@ -226,28 +235,30 @@ def wants_partial(request: Request) -> bool:
 
 
 @app.get("/login", response_class=HTMLResponse)
-def login_form(request: Request, next: str = "/"):
-    if AUTH_ENABLED and request_is_authenticated(request):
+def login_form(request: Request, session: SessionDep, next: str = "/"):
+    auth_enabled = auth_is_enabled(session)
+    if auth_enabled and request_is_authenticated(request):
         return redirect(safe_next_url(next))
     return templates.TemplateResponse(
         request,
         "login.html",
-        {"error": "", "next": safe_next_url(next), "auth_enabled": AUTH_ENABLED},
+        {"error": "", "next": safe_next_url(next), "auth_enabled": auth_enabled},
     )
 
 
 @app.post("/login")
 def login(request: Request, session: SessionDep, password: Annotated[str, Form()], next: Annotated[str, Form()] = "/"):
-    if not AUTH_ENABLED:
+    password_hash = current_password_hash(session)
+    if not password_hash:
         return redirect("/")
-    if verify_password(password, current_password_hash(session)):
+    if verify_password(password, password_hash):
         response = redirect(safe_next_url(next))
         set_auth_cookie(response)
         return response
     return templates.TemplateResponse(
         request,
         "login.html",
-        {"error": "That password did not match.", "next": safe_next_url(next), "auth_enabled": AUTH_ENABLED},
+        {"error": "That password did not match.", "next": safe_next_url(next), "auth_enabled": True},
         status_code=401,
     )
 
@@ -354,12 +365,15 @@ def reset_password(
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, session: SessionDep):
+    categories_with_counts = repo.list_categories_with_counts(session)
     return templates.TemplateResponse(
         request,
         "home.html",
         {
             "db_path": DB_PATH,
-            "categories": repo.list_categories_with_counts(session),
+            "categories": categories_with_counts,
+            "category_count": len(categories_with_counts),
+            "entry_count": repo.count_entries(session),
             "recent_entries": repo.recent_entries(session),
             "query": "",
         },
@@ -367,11 +381,18 @@ def home(request: Request, session: SessionDep):
 
 
 @app.get("/categories", response_class=HTMLResponse)
-def categories(request: Request, session: SessionDep):
+def categories(request: Request, session: SessionDep, q: str = "", sort: str = "created"):
+    selected_sort = "name" if sort == "name" else "created"
+    context = {
+        "categories": repo.list_categories_with_counts(session, search=q, sort_by=selected_sort),
+        "query": q,
+        "sort": selected_sort,
+    }
+    template = "partials/category_list.html" if wants_partial(request) else "categories.html"
     return templates.TemplateResponse(
         request,
-        "categories.html",
-        {"categories": repo.list_categories_with_counts(session)},
+        template,
+        context,
     )
 
 
@@ -584,15 +605,21 @@ def search(
     category_id: int | None = None,
     creator: str = "",
     tag: str = "",
+    picker: bool = False,
 ):
-    entries = repo.list_entries(
-        session,
-        category_id=category_id,
-        search=q,
-        creator=creator,
-        tag=tag,
-        sort_by="Title",
-    )
+    if picker and not q.strip() and category_id is None and not creator and not tag:
+        entries = repo.recent_entries(session, limit=8)
+    else:
+        entries = repo.list_entries(
+            session,
+            category_id=category_id,
+            search=q,
+            creator=creator,
+            tag=tag,
+            sort_by="Title",
+        )
+        if picker:
+            entries = entries[:8]
     context = {
         "entries": entries,
         "categories": repo.list_categories(session),
@@ -602,8 +629,14 @@ def search(
         "category_id": category_id,
         "selected_creator": creator,
         "selected_tag": tag,
+        "picker": picker,
     }
-    template = "partials/search_results.html" if wants_partial(request) else "search.html"
+    if wants_partial(request) and picker:
+        template = "partials/search_picker.html"
+    elif wants_partial(request):
+        template = "partials/search_results.html"
+    else:
+        template = "search.html"
     return templates.TemplateResponse(request, template, context)
 
 

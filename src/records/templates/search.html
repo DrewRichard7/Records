@@ -8,7 +8,7 @@
   </div>
 </div>
 <section class="panel search-console compact">
-  <form class="filterbar wrap" action="/search" method="get" hx-get="/search" hx-target="#search-results" hx-trigger="keyup changed delay:250ms from:input, change, submit">
+  <form class="filterbar wrap" action="/search" method="get" hx-get="/search" hx-target="#search-results" hx-trigger="input changed delay:250ms from:input, change, submit">
     <input class="search-input" type="search" name="q" value="{{ query }}" placeholder="Search archive..." autocomplete="off" autocapitalize="none" spellcheck="false" data-primary-search>
     <select name="category_id">
       <option value="">All categories</option>

@@ -1,53 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Records{% endblock %}
 {% block content %}
-<section class="search-console panel">
-  <div>
-    <p class="eyebrow">Personal archive terminal</p>
-    <h1>Records</h1>
-    <p class="muted">Search titles, categories, tags, creators, notes, links, and uploaded file names.</p>
+<section class="panel command-card home-overview">
+  <p class="terminal-prompt">&gt; home</p>
+  <div class="overview-stats">
+    <span><strong>{{ category_count }}</strong> categories</span>
+    <span><strong>{{ entry_count }}</strong> entries</span>
   </div>
-  <form class="primary-search" action="/search" method="get" hx-get="/search" hx-target="#home-results" hx-trigger="keyup changed delay:150ms from:input, search, submit">
-    <input class="search-input" type="search" name="q" placeholder="Search archive..." value="{{ query }}" autocomplete="off" autocapitalize="none" spellcheck="false" autofocus data-primary-search>
-    <button type="submit">Search</button>
-  </form>
-  <div id="home-results" class="search-preview"></div>
+  <button class="button search-launch" type="button" data-open-search>Search archive</button>
 </section>
 
-<div class="quick-actions">
-  <a class="button" href="/entries/new">Create entry</a>
-  <a class="button secondary" href="/categories/new">Create category</a>
-  <a class="button secondary" href="/search">Advanced search</a>
+<div class="quick-actions home-actions">
+  <a class="button" href="/entries/new">New entry</a>
+  <a class="button secondary" href="/categories/new">New category</a>
 </div>
 
-<div class="two-column">
-  <section class="panel">
-    <div class="section-heading">
-      <h2>Categories</h2>
-      <a href="/categories">View all</a>
-    </div>
-    <div class="row-list">
-      {% for category, count in categories %}
-        <a class="list-row" href="/categories/{{ category.id }}">
-          <span>
-            <strong>{{ category.name }}</strong>
-            <span class="muted block">{{ category.description or "No description" }}</span>
-          </span>
-          <span class="pill">{{ count }} entries</span>
-        </a>
-      {% else %}
-        <p class="muted">No categories yet.</p>
-      {% endfor %}
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="section-heading">
-      <h2>Recently Added</h2>
-      <a href="/search">Browse all</a>
-    </div>
-    {% set entries = recent_entries %}
-    {% include "partials/entry_list.html" %}
-  </section>
-</div>
+<section class="panel recent-overview">
+  <div class="section-heading">
+    <h2>Recent</h2>
+    <a href="/search">View all</a>
+  </div>
+  <div class="row-list">
+    {% for entry in recent_entries[:3] %}
+      <a class="list-row" href="/entries/{{ entry.id }}">
+        <span>
+          <strong>{{ entry.title }}</strong>
+          <span class="muted block">{% if entry.category %}{{ entry.category.name }}{% else %}Uncategorized{% endif %}</span>
+        </span>
+        {% if entry.document_filename %}<span class="pill">File</span>{% endif %}
+      </a>
+    {% else %}
+      <p class="muted">No entries yet.</p>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}
