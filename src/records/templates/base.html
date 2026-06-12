@@ -9,9 +9,9 @@
   <link rel="manifest" href="{{ url_for('static', path='site.webmanifest') }}">
   <meta name="theme-color" content="#151925">
   <meta name="apple-mobile-web-app-title" content="Records">
-  <link rel="stylesheet" href="{{ url_for('static', path='css/records.css') }}?v=command-search-4">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/records.css') }}?v=command-search-8">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-  <script src="{{ url_for('static', path='js/records.js') }}?v=command-search-4" defer></script>
+  <script src="{{ url_for('static', path='js/records.js') }}?v=command-search-8" defer></script>
 </head>
 <body>
   <header class="topbar command-topbar">
@@ -42,9 +42,9 @@
         <p class="terminal-prompt">&gt; search</p>
         <button class="link-button" type="button" data-close-search>Close</button>
       </div>
-      <form class="modal-search-form" action="/search" method="get" hx-get="/search" hx-target="#global-search-results" hx-trigger="input changed delay:100ms from:input, search, submit">
+      <form class="modal-search-form" action="/search" method="get">
         <input type="hidden" name="picker" value="true">
-        <input class="search-input" type="search" name="q" placeholder="Search archive..." value="" autocomplete="off" autocapitalize="none" spellcheck="false" data-primary-search data-command-search>
+        <input class="search-input" type="search" name="q" placeholder="Search archive..." value="" autocomplete="off" autocapitalize="none" spellcheck="false" hx-get="/search" hx-target="#global-search-results" hx-trigger="input changed delay:100ms, search" hx-include="closest form" data-primary-search data-command-search>
       </form>
       <div id="global-search-results" class="command-search-results"></div>
     </div>
