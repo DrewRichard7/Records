@@ -136,16 +136,9 @@ document.addEventListener("htmx:afterSwap", (event) => {
 
 document.addEventListener("keydown", (event) => {
   const active = document.activeElement;
-  const isTyping = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement;
   const search = primarySearch();
   const modal = searchModal();
   const modalIsOpen = Boolean(modal && modal.classList.contains("open"));
-
-  if (event.key === "/" && !isTyping && search) {
-    event.preventDefault();
-    openSearchModal();
-    return;
-  }
 
   if (event.key === "Escape" && modalIsOpen) {
     event.preventDefault();
