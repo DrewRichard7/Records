@@ -44,14 +44,25 @@ def list_categories(session: Session) -> list[Category]:
     return list(session.exec(statement))
 
 
-def list_categories_with_counts(session: Session) -> list[tuple[Category, int]]:
+def list_categories_with_counts(session: Session, *, search: str = "", sort_by: str = "created") -> list[tuple[Category, int]]:
     statement = (
         select(Category, func.count(Entry.id))
         .outerjoin(Entry)
         .group_by(Category.id)
-        .order_by(Category.name)
     )
+    term = search.strip()
+    if term:
+        pattern = f"%{term}%"
+        statement = statement.where(or_(col(Category.name).ilike(pattern), col(Category.description).ilike(pattern)))
+    if sort_by == "name":
+        statement = statement.order_by(Category.name)
+    else:
+        statement = statement.order_by(Category.created_at.desc(), Category.name)
     return [(category, count) for category, count in session.exec(statement).all()]
+
+
+def count_entries(session: Session) -> int:
+    return session.exec(select(func.count(Entry.id))).one()
 
 
 def get_category(session: Session, category_id: int) -> Category | None:

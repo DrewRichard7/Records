@@ -1,0 +1,21 @@
+<div class="category-list row-list">
+  {% for category, count in categories %}
+    <div class="category-row" id="category-{{ category.id }}">
+      <a class="category-row-main" href="/categories/{{ category.id }}">
+        <span>
+          <strong>{{ category.name }}</strong>
+          <span class="muted block">{{ category.description or "No description" }}</span>
+        </span>
+        <span class="pill">{{ count }} entries</span>
+      </a>
+      <div class="category-row-actions">
+        <a href="/categories/{{ category.id }}/edit">Edit</a>
+        <form action="/categories/{{ category.id }}/delete" method="post" hx-post="/categories/{{ category.id }}/delete" hx-target="#category-{{ category.id }}" hx-swap="outerHTML" hx-confirm="Delete this category and its entries?">
+          <button class="link-button danger" type="submit">Delete</button>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p class="muted">No categories found.</p>
+  {% endfor %}
+</div>

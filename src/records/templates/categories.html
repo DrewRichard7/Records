@@ -3,34 +3,30 @@
 {% block content %}
 <div class="page-title">
   <div>
+    <p class="terminal-prompt">&gt; categories</p>
     <h1>Categories</h1>
     <p class="muted">Collections that hold entries.</p>
   </div>
-  <a class="button" href="/categories/new">Create category</a>
+  <a class="button" href="/categories/new">New category</a>
 </div>
 
-<section class="panel">
-  <table class="data-table">
-    <thead>
-      <tr><th>Name</th><th>Description</th><th>Entries</th><th>Actions</th></tr>
-    </thead>
-    <tbody>
-      {% for category, count in categories %}
-        <tr id="category-{{ category.id }}">
-          <td><a href="/categories/{{ category.id }}">{{ category.name }}</a></td>
-          <td class="muted">{{ category.description }}</td>
-          <td>{{ count }}</td>
-          <td class="row-actions">
-            <a href="/categories/{{ category.id }}/edit">Edit</a>
-            <form action="/categories/{{ category.id }}/delete" method="post" hx-post="/categories/{{ category.id }}/delete" hx-target="#category-{{ category.id }}" hx-swap="outerHTML" hx-confirm="Delete this category and its entries?">
-              <button class="link-button danger" type="submit">Delete</button>
-            </form>
-          </td>
-        </tr>
-      {% else %}
-        <tr><td colspan="4" class="muted">No categories yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<section class="panel category-console">
+  <form class="category-toolbar" action="/categories" method="get" hx-get="/categories" hx-target="#category-list" hx-trigger="input changed delay:150ms from:input, change, submit">
+    <input class="search-input" type="search" name="q" value="{{ query }}" placeholder="Filter categories..." autocomplete="off" autocapitalize="none" spellcheck="false">
+    <div class="segmented" aria-label="Sort categories">
+      <label>
+        <input type="radio" name="sort" value="created" {% if sort == "created" %}checked{% endif %}>
+        <span>Created</span>
+      </label>
+      <label>
+        <input type="radio" name="sort" value="name" {% if sort == "name" %}checked{% endif %}>
+        <span>Name</span>
+      </label>
+    </div>
+    <button type="submit">Apply</button>
+  </form>
+  <div id="category-list">
+    {% include "partials/category_list.html" %}
+  </div>
 </section>
 {% endblock %}

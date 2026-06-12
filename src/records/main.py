@@ -365,12 +365,15 @@ def reset_password(
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, session: SessionDep):
+    categories_with_counts = repo.list_categories_with_counts(session)
     return templates.TemplateResponse(
         request,
         "home.html",
         {
             "db_path": DB_PATH,
-            "categories": repo.list_categories_with_counts(session),
+            "categories": categories_with_counts,
+            "category_count": len(categories_with_counts),
+            "entry_count": repo.count_entries(session),
             "recent_entries": repo.recent_entries(session),
             "query": "",
         },
@@ -378,11 +381,18 @@ def home(request: Request, session: SessionDep):
 
 
 @app.get("/categories", response_class=HTMLResponse)
-def categories(request: Request, session: SessionDep):
+def categories(request: Request, session: SessionDep, q: str = "", sort: str = "created"):
+    selected_sort = "name" if sort == "name" else "created"
+    context = {
+        "categories": repo.list_categories_with_counts(session, search=q, sort_by=selected_sort),
+        "query": q,
+        "sort": selected_sort,
+    }
+    template = "partials/category_list.html" if wants_partial(request) else "categories.html"
     return templates.TemplateResponse(
         request,
-        "categories.html",
-        {"categories": repo.list_categories_with_counts(session)},
+        template,
+        context,
     )
 
 
@@ -595,15 +605,21 @@ def search(
     category_id: int | None = None,
     creator: str = "",
     tag: str = "",
+    picker: bool = False,
 ):
-    entries = repo.list_entries(
-        session,
-        category_id=category_id,
-        search=q,
-        creator=creator,
-        tag=tag,
-        sort_by="Title",
-    )
+    if picker and not q.strip() and category_id is None and not creator and not tag:
+        entries = repo.recent_entries(session, limit=8)
+    else:
+        entries = repo.list_entries(
+            session,
+            category_id=category_id,
+            search=q,
+            creator=creator,
+            tag=tag,
+            sort_by="Title",
+        )
+        if picker:
+            entries = entries[:8]
     context = {
         "entries": entries,
         "categories": repo.list_categories(session),
@@ -613,8 +629,14 @@ def search(
         "category_id": category_id,
         "selected_creator": creator,
         "selected_tag": tag,
+        "picker": picker,
     }
-    template = "partials/search_results.html" if wants_partial(request) else "search.html"
+    if wants_partial(request) and picker:
+        template = "partials/search_picker.html"
+    elif wants_partial(request):
+        template = "partials/search_results.html"
+    else:
+        template = "search.html"
     return templates.TemplateResponse(request, template, context)
 
 
