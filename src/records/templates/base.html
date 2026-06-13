@@ -9,9 +9,26 @@
   <link rel="manifest" href="{{ url_for('static', path='site.webmanifest') }}">
   <meta name="theme-color" content="#151925">
   <meta name="apple-mobile-web-app-title" content="Records">
-  <link rel="stylesheet" href="{{ url_for('static', path='css/records.css') }}?v=floating-actions-1">
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const readPreference = (key, fallback) => {
+        try {
+          return localStorage.getItem(key) || fallback;
+        } catch {
+          return fallback;
+        }
+      };
+      const supportedThemes = ["default", "tokyonight", "gruvbox", "ravelry", "miasma", "zen"];
+      const mode = readPreference("records-color-mode", "dark");
+      const theme = readPreference("records-theme", "default");
+      root.dataset.theme = supportedThemes.includes(theme) ? theme : "default";
+      root.dataset.colorMode = mode === "light" ? "light" : "dark";
+    })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/records.css') }}?v=color-schemes-1">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-  <script src="{{ url_for('static', path='js/records.js') }}?v=floating-actions-1" defer></script>
+  <script src="{{ url_for('static', path='js/records.js') }}?v=color-schemes-1" defer></script>
 </head>
 <body>
   <header class="topbar command-topbar">
@@ -27,6 +44,24 @@
       <a class="button secondary" href="/">Home</a>
       <a class="button secondary" href="/categories">Categories</a>
       <a class="button secondary" href="/search" data-open-search>Search</a>
+      <div class="theme-menu-group">
+        <p class="caption">Mode</p>
+        <div class="segmented theme-mode-control" aria-label="Color mode">
+          <button type="button" data-theme-mode-option="dark" aria-pressed="true">Dark</button>
+          <button type="button" data-theme-mode-option="light" aria-pressed="false">Light</button>
+        </div>
+      </div>
+      <div class="theme-menu-group">
+        <label class="caption" for="theme-scheme">Scheme</label>
+        <select id="theme-scheme" data-theme-scheme>
+          <option value="default">Default</option>
+          <option value="tokyonight">Tokyonight</option>
+          <option value="gruvbox">Gruvbox</option>
+          <option value="ravelry">Ravelry</option>
+          <option value="miasma">Miasma</option>
+          <option value="zen">Zen</option>
+        </select>
+      </div>
       {% if request.url.path not in ["/login", "/forgot-password", "/reset-password"] %}
         <form action="/logout" method="post">
           <button class="button secondary" type="submit">Log out</button>
