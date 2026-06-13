@@ -14,6 +14,7 @@
     <div class="meta-row"><span>Updated</span><strong>{{ entry.updated_at|date }}</strong></div>
     <div class="actions stacked">
       <a class="button" href="/entries/{{ entry.id }}/edit">Edit</a>
+      <a class="button secondary" href="/entries/new?category_id={{ entry.category_id }}">Add another entry</a>
       <form action="/entries/{{ entry.id }}/delete" method="post">
         <button class="danger" type="submit">Delete</button>
       </form>

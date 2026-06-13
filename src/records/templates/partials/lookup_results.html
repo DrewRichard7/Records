@@ -1,0 +1,26 @@
+{% if unsupported %}
+  <p class="muted caption">Lookup is available for Vinyls and Books.</p>
+{% elif not title and not creator %}
+  <p class="muted caption">Enter a title or creator to look up links.</p>
+{% elif candidates %}
+  <div class="lookup-results">
+    {% for candidate in candidates %}
+      <button
+        class="lookup-result"
+        type="button"
+        data-lookup-source-url="{{ candidate.source_url }}"
+        data-lookup-image-url="{{ candidate.image_url }}"
+      >
+        <span>
+          <strong>{{ candidate.provider }}</strong>
+          <span>{{ candidate.title }}</span>
+          {% if candidate.creator %}<span class="muted">{{ candidate.creator }}</span>{% endif %}
+        </span>
+        {% if candidate.image_url %}<span class="pill faint">Image</span>{% endif %}
+      </button>
+      {% if candidate.reason %}<p class="muted caption lookup-reason">{{ candidate.reason }}</p>{% endif %}
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted caption">No lookup results found. Add source and image links manually.</p>
+{% endif %}
