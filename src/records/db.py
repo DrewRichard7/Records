@@ -4,6 +4,8 @@ from pathlib import Path
 from sqlalchemy import text
 from sqlmodel import Session, SQLModel, create_engine
 
+from records import models as _models  # Registers SQLModel tables for direct init_db() calls.
+
 
 def database_path() -> Path:
     configured = os.environ.get("RECORDS_DB_PATH")
@@ -26,6 +28,11 @@ UPLOAD_DIR = upload_dir()
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+DEFAULT_CATEGORIES_SETTING_KEY = "default_categories_seeded_v1"
+DEFAULT_CATEGORIES = (
+    ("Vinyls", "Albums and records."),
+    ("Books", "Books and reading."),
+)
 
 def _table_columns(connection, table_name: str) -> dict[str, str]:
     rows = connection.execute(text(f"PRAGMA table_info({table_name})")).mappings()
@@ -34,6 +41,11 @@ def _table_columns(connection, table_name: str) -> dict[str, str]:
 def _add_column_if_missing(connection, table_name: str, column_name: str, ddl: str) -> None:
     if column_name not in _table_columns(connection, table_name):
         connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {ddl}"))
+
+
+def _is_new_database() -> bool:
+    with engine.begin() as connection:
+        return not _table_columns(connection, "category") and not _table_columns(connection, "appsetting")
 
 
 def _migrate_category_columns() -> None:
@@ -125,10 +137,43 @@ def _copy_legacy_entries(connection, old_columns: dict[str, str]) -> None:
                     )
                 )
 
+
+def _seed_default_categories() -> None:
+    with engine.begin() as connection:
+        seeded = connection.execute(
+            text("SELECT value FROM appsetting WHERE key = :key"),
+            {"key": DEFAULT_CATEGORIES_SETTING_KEY},
+        ).scalar_one_or_none()
+        if seeded:
+            return
+        for name, description in DEFAULT_CATEGORIES:
+            connection.execute(
+                text(
+                    """
+                    INSERT OR IGNORE INTO category (name, description, created_at, updated_at)
+                    VALUES (:name, :description, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    """
+                ),
+                {"name": name, "description": description},
+            )
+        connection.execute(
+            text(
+                """
+                INSERT OR REPLACE INTO appsetting (key, value, updated_at)
+                VALUES (:key, :value, CURRENT_TIMESTAMP)
+                """
+            ),
+            {"key": DEFAULT_CATEGORIES_SETTING_KEY, "value": "1"},
+        )
+
+
 def init_db() -> None:
+    should_seed_defaults = _is_new_database()
     SQLModel.metadata.create_all(engine)
     _migrate_category_columns()
     _migrate_entry_table()
+    if should_seed_defaults:
+        _seed_default_categories()
 
 def get_session() -> Session:
     return Session(engine)

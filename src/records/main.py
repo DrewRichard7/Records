@@ -23,6 +23,7 @@ from records.auth import (
     session_token_is_valid,
     verify_password,
 )
+from records import integrations
 from records import repo
 from records.db import DB_PATH, UPLOAD_DIR, get_session, init_db
 
@@ -468,6 +469,29 @@ def delete_category(request: Request, session: SessionDep, category_id: int):
     if wants_partial(request):
         return Response(status_code=200)
     return redirect("/categories")
+
+
+@app.get("/entries/lookup", response_class=HTMLResponse)
+def entry_lookup(
+    request: Request,
+    session: SessionDep,
+    category_id: int | None = None,
+    title: str = "",
+    creator: str = "",
+):
+    category = repo.get_category(session, category_id) if category_id is not None else None
+    candidates = integrations.lookup_candidates(category.name, title, creator) if category else []
+    lookup_kind = integrations.category_lookup_kind(category.name) if category else ""
+    return templates.TemplateResponse(
+        request,
+        "partials/lookup_results.html",
+        {
+            "candidates": candidates,
+            "unsupported": bool(category and not lookup_kind),
+            "title": title.strip(),
+            "creator": creator.strip(),
+        },
+    )
 
 
 @app.get("/entries/new", response_class=HTMLResponse)

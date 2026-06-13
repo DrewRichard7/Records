@@ -24,8 +24,10 @@ There is no React, Vue, Svelte, Node build step, Tailwind, Bootstrap, or NiceGUI
 ## Features
 
 - Create, edit, delete, and view categories.
+- New databases start with removable `Vinyls` and `Books` categories.
 - Create, edit, delete, and view entries.
 - Store title, creator, notes, tags, source URL, and optional image URL/path.
+- Look up source and image links from supported collection providers while creating or editing entries.
 - Attach one image or PDF document to an entry.
 - Search entries by title, creator, notes, tags, and category.
 - Filter entries by category, creator, and tag.
@@ -64,6 +66,7 @@ Records currently has two main tables.
 - `updated_at`
 
 Categories are broad buckets such as `Books`, `Records`, `Recipes`, `Knitting Patterns`, or `Tools`.
+New databases are seeded with `Vinyls` and `Books`. Those categories are ordinary categories: you can rename or delete them, and Records will not recreate them after the initial database setup.
 
 ### Entry
 
@@ -82,6 +85,28 @@ Categories are broad buckets such as `Books`, `Records`, `Recipes`, `Knitting Pa
 - `updated_at`
 
 Tags are stored as a comma-separated string for now. This keeps the app simple and fast for the rough local version.
+
+## Link and image lookup
+
+The entry form includes a `Look up links` button for supported default categories. Lookup fills the existing editable `Source URL` and `Image URL or path` fields only after you choose a result.
+
+### Vinyls
+
+For `Vinyls`, Records searches Apple's public iTunes Search API for album matches.
+
+- Source URL uses the Apple Music/iTunes album URL when Apple returns a match.
+- Image URL uses Apple album artwork when available.
+- If Apple does not return a usable album, Records offers a Spotify search URL as the source fallback.
+- Spotify is not called through the Spotify API; no Spotify credentials are required.
+
+### Books
+
+For `Books`, Records searches Google Books and Open Library for metadata and cover images.
+
+- Goodreads and Fable choices use matched book metadata to fill source URL and image URL together.
+- Google Books and Open Library choices are also available when you prefer those source URLs.
+- Goodreads and Fable are not scraped and are not treated as structured metadata providers.
+- If no provider result is useful, enter the source and image links manually.
 
 ## Requirements
 
