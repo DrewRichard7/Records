@@ -26,9 +26,9 @@
       root.dataset.colorMode = mode === "light" ? "light" : "dark";
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', path='css/records.css') }}?v=more-themes-1">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/records.css') }}?v=floating-theme-2">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-  <script src="{{ url_for('static', path='js/records.js') }}?v=more-themes-1" defer></script>
+  <script src="{{ url_for('static', path='js/records.js') }}?v=floating-theme-2" defer></script>
 </head>
 <body>
   <header class="topbar command-topbar">
@@ -50,20 +50,6 @@
           <button type="button" data-theme-mode-option="dark" aria-pressed="true">Dark</button>
           <button type="button" data-theme-mode-option="light" aria-pressed="false">Light</button>
         </div>
-      </div>
-      <div class="theme-menu-group">
-        <label class="caption" for="theme-scheme">Scheme</label>
-        <select id="theme-scheme" data-theme-scheme>
-          <option value="default">Default</option>
-          <option value="tokyonight">Tokyonight</option>
-          <option value="gruvbox">Gruvbox</option>
-          <option value="ravelry">Ravelry</option>
-          <option value="miasma">Miasma</option>
-          <option value="zen">Zen</option>
-          <option value="rose-pine">Rose Pine</option>
-          <option value="everforest">Everforest</option>
-          <option value="newspaper">Newspaper</option>
-        </select>
       </div>
       {% if request.url.path not in ["/login", "/forgot-password", "/reset-password"] %}
         <form action="/logout" method="post">
@@ -95,6 +81,17 @@
     <a class="floating-action-item action-new-category" href="/categories/new">New category</a>
     <a class="floating-action-item action-home" href="/">Home</a>
     <a class="floating-action-item action-search" href="/search" data-open-search>Search</a>
+    <select class="floating-action-item action-theme" id="theme-scheme" aria-label="Theme scheme" data-theme-scheme>
+      <option value="default">Default</option>
+      <option value="tokyonight">Tokyonight</option>
+      <option value="gruvbox">Gruvbox</option>
+      <option value="ravelry">Ravelry</option>
+      <option value="miasma">Miasma</option>
+      <option value="zen">Zen</option>
+      <option value="rose-pine">Rose Pine</option>
+      <option value="everforest">Everforest</option>
+      <option value="newspaper">Newspaper</option>
+    </select>
     <button class="floating-action-toggle" type="button" aria-label="Open quick actions" aria-expanded="false" data-floating-actions-toggle>
       <img src="{{ url_for('static', path='apple-touch-icon.png') }}" alt="">
     </button>

@@ -1072,7 +1072,7 @@ h2 { font-size: 1rem; color: var(--heading); }
   align-items: center;
   justify-content: center;
   width: 104px;
-  min-height: 36px;
+  height: 42px;
   padding: .35rem .55rem;
   border: 1px solid var(--line);
   background: var(--secondary-control);
@@ -1083,6 +1083,8 @@ h2 { font-size: 1rem; color: var(--heading); }
   text-align: center;
   opacity: 0;
   pointer-events: none;
+  appearance: none;
+  border-radius: 0;
   transform: translate(-50%, 0) scale(.82);
   transition:
     opacity .14s ease-out,
@@ -1101,10 +1103,11 @@ h2 { font-size: 1rem; color: var(--heading); }
   pointer-events: auto;
 }
 
-.floating-action-menu.open .action-new-entry { transform: translate(calc(-50% - 116px), -58px) scale(1); }
-.floating-action-menu.open .action-new-category { transform: translate(calc(-50% - 68px), -126px) scale(1); }
-.floating-action-menu.open .action-home { transform: translate(calc(-50% + 68px), -126px) scale(1); }
-.floating-action-menu.open .action-search { transform: translate(calc(-50% + 116px), -58px) scale(1); }
+.floating-action-menu.open .action-new-entry { transform: translate(calc(-50% - 220px), -56px) scale(1); }
+.floating-action-menu.open .action-new-category { transform: translate(calc(-50% - 126px), -138px) scale(1); }
+.floating-action-menu.open .action-home { transform: translate(-50%, -182px) scale(1); }
+.floating-action-menu.open .action-search { transform: translate(calc(-50% + 126px), -138px) scale(1); }
+.floating-action-menu.open .action-theme { transform: translate(calc(-50% + 220px), -56px) scale(1); }
 
 @keyframes home-icon-bounce {
   0%, 100% { transform: translateY(0); }
@@ -1569,8 +1572,9 @@ textarea { resize: vertical; }
     width: 92px;
     font-size: .72rem;
   }
-  .floating-action-menu.open .action-new-entry { transform: translate(calc(-50% - 94px), -54px) scale(1); }
-  .floating-action-menu.open .action-new-category { transform: translate(calc(-50% - 54px), -116px) scale(1); }
-  .floating-action-menu.open .action-home { transform: translate(calc(-50% + 54px), -116px) scale(1); }
-  .floating-action-menu.open .action-search { transform: translate(calc(-50% + 94px), -54px) scale(1); }
+  .floating-action-menu.open .action-new-entry { transform: translate(calc(-50% - 146px), -54px) scale(1); }
+  .floating-action-menu.open .action-new-category { transform: translate(calc(-50% - 88px), -122px) scale(1); }
+  .floating-action-menu.open .action-home { transform: translate(-50%, -174px) scale(1); }
+  .floating-action-menu.open .action-search { transform: translate(calc(-50% + 88px), -122px) scale(1); }
+  .floating-action-menu.open .action-theme { transform: translate(calc(-50% + 146px), -54px) scale(1); }
 }

@@ -215,6 +215,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    if (target.closest("[data-theme-scheme]")) {
+      return;
+    }
+
     const floatingAction = target.closest(".floating-action-item");
     if (floatingAction) {
       setFloatingActionsOpen(false);
