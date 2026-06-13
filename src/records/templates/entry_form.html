@@ -14,8 +14,17 @@
     <label>Title <input required name="title" value="{{ entry.title if entry else '' }}"></label>
     <label>Creator <input name="creator" value="{{ entry.creator if entry else '' }}"></label>
     <label>Tags <input name="tags" placeholder="comma, separated, tags" value="{{ entry.tags if entry else '' }}"></label>
-    <label>Source URL <input name="source_url" type="url" value="{{ entry.source_url if entry else '' }}"></label>
-    <label>Image URL or path <input name="image_url" value="{{ entry.image_url if entry else '' }}"></label>
+    <div class="lookup-panel">
+      <div class="lookup-actions">
+        <button type="button" hx-get="/entries/lookup" hx-include="closest form" hx-target="#lookup-results" hx-swap="innerHTML">
+          Look up links
+        </button>
+        <span class="muted caption">Uses Apple Music for Vinyls and Google Books/search links for Books.</span>
+      </div>
+      <div id="lookup-results"></div>
+    </div>
+    <label>Source URL <input id="source-url" name="source_url" type="url" value="{{ entry.source_url if entry else '' }}"></label>
+    <label>Image URL or path <input id="image-url" name="image_url" value="{{ entry.image_url if entry else '' }}"></label>
     <label>Document or image upload
       <input name="document" type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf">
       {% if entry and entry.document_filename %}

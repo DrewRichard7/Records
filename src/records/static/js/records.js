@@ -110,6 +110,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (target.closest("[data-close-search]")) {
       closeSearchModal({ clear: true });
+      return;
+    }
+
+    const lookupResult = target.closest("[data-lookup-source-url]");
+    if (lookupResult) {
+      const sourceInput = document.querySelector("#source-url");
+      const imageInput = document.querySelector("#image-url");
+      const sourceUrl = lookupResult.getAttribute("data-lookup-source-url") || "";
+      const imageUrl = lookupResult.getAttribute("data-lookup-image-url") || "";
+      if (sourceInput) {
+        sourceInput.value = sourceUrl;
+        sourceInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      if (imageInput && imageUrl) {
+        imageInput.value = imageUrl;
+        imageInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
     }
   });
 
