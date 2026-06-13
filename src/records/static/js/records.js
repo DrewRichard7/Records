@@ -14,6 +14,19 @@ function searchResults() {
   return document.querySelector(".command-search-results");
 }
 
+function floatingActions() {
+  return document.querySelector("[data-floating-actions]");
+}
+
+function setFloatingActionsOpen(isOpen) {
+  const actions = floatingActions();
+  const toggle = document.querySelector("[data-floating-actions-toggle]");
+  if (!actions || !toggle) return;
+  actions.classList.toggle("open", isOpen);
+  toggle.setAttribute("aria-expanded", String(isOpen));
+  toggle.setAttribute("aria-label", isOpen ? "Close quick actions" : "Open quick actions");
+}
+
 function setMenuOpen(isOpen) {
   const menu = document.querySelector("[data-menu]");
   const menuToggle = document.querySelector("[data-menu-toggle]");
@@ -104,7 +117,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (searchTrigger) {
       event.preventDefault();
       setMenuOpen(false);
+      setFloatingActionsOpen(false);
       openSearchModal();
+      return;
+    }
+
+    const floatingToggle = target.closest("[data-floating-actions-toggle]");
+    if (floatingToggle) {
+      event.preventDefault();
+      const actions = floatingActions();
+      setFloatingActionsOpen(!actions || !actions.classList.contains("open"));
+      return;
+    }
+
+    const floatingAction = target.closest(".floating-action-item");
+    if (floatingAction) {
+      setFloatingActionsOpen(false);
+      return;
+    }
+
+    const actions = floatingActions();
+    if (actions && actions.classList.contains("open") && !target.closest("[data-floating-actions]")) {
+      setFloatingActionsOpen(false);
       return;
     }
 
@@ -144,11 +178,13 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     event.stopPropagation();
     closeSearchModal({ clear: true });
+    setFloatingActionsOpen(false);
     return;
   }
 
   if (event.key === "Escape") {
     setMenuOpen(false);
+    setFloatingActionsOpen(false);
   }
 
   if (event.key === "Enter" && active === search && modalIsOpen && search.value.trim()) {
