@@ -22,13 +22,22 @@
   </div>
   <div class="row-list">
     {% for entry in recent_entries[:3] %}
-      <a class="list-row" href="/entries/{{ entry.id }}">
-        <span>
-          <strong>{{ entry.title }}</strong>
-          <span class="muted block">{% if entry.category %}{{ entry.category.name }}{% else %}Uncategorized{% endif %}</span>
+      <div class="list-row">
+        <a class="list-row-main" href="/entries/{{ entry.id }}">
+          <span>
+            <strong>{{ entry.title }}</strong>
+            <span class="muted block">{% if entry.category %}{{ entry.category.name }}{% else %}Uncategorized{% endif %}</span>
+          </span>
+        </a>
+        <span class="list-row-meta">
+          {% if entry.tags %}
+            {% for tag in split_tags(entry.tags) %}
+              <a class="pill faint" href="/search?tag={{ tag|urlencode }}">{{ tag }}</a>
+            {% endfor %}
+          {% endif %}
+          {% if entry.document_filename %}<span class="pill">File</span>{% endif %}
         </span>
-        {% if entry.document_filename %}<span class="pill">File</span>{% endif %}
-      </a>
+      </div>
     {% else %}
       <p class="muted">No entries yet.</p>
     {% endfor %}
