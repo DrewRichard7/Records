@@ -18,7 +18,7 @@ function colorModeButtons() {
   return Array.from(document.querySelectorAll("[data-theme-mode-option]"));
 }
 
-const supportedThemes = ["default", "tokyonight", "gruvbox", "ravelry", "miasma", "zen"];
+const supportedThemes = ["default", "tokyonight", "gruvbox", "ravelry", "miasma", "zen", "rose-pine", "everforest", "newspaper"];
 
 const themeColors = {
   default: { dark: "#151925", light: "#f4f7fb" },
@@ -27,6 +27,9 @@ const themeColors = {
   ravelry: { dark: "#191c27", light: "#f3f4f0" },
   miasma: { dark: "#1c1c1c", light: "#ded8c2" },
   zen: { dark: "#000000", light: "#ffffff" },
+  "rose-pine": { dark: "#191724", light: "#faf4ed" },
+  everforest: { dark: "#2d353b", light: "#fdf6e3" },
+  newspaper: { dark: "#141617", light: "#f5f0df" },
 };
 
 function readPreference(key, fallback = "") {

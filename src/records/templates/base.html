@@ -19,16 +19,16 @@
           return fallback;
         }
       };
-      const supportedThemes = ["default", "tokyonight", "gruvbox", "ravelry", "miasma", "zen"];
+      const supportedThemes = ["default", "tokyonight", "gruvbox", "ravelry", "miasma", "zen", "rose-pine", "everforest", "newspaper"];
       const mode = readPreference("records-color-mode", "dark");
       const theme = readPreference("records-theme", "default");
       root.dataset.theme = supportedThemes.includes(theme) ? theme : "default";
       root.dataset.colorMode = mode === "light" ? "light" : "dark";
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', path='css/records.css') }}?v=color-schemes-1">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/records.css') }}?v=more-themes-1">
   <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
-  <script src="{{ url_for('static', path='js/records.js') }}?v=color-schemes-1" defer></script>
+  <script src="{{ url_for('static', path='js/records.js') }}?v=more-themes-1" defer></script>
 </head>
 <body>
   <header class="topbar command-topbar">
@@ -60,6 +60,9 @@
           <option value="ravelry">Ravelry</option>
           <option value="miasma">Miasma</option>
           <option value="zen">Zen</option>
+          <option value="rose-pine">Rose Pine</option>
+          <option value="everforest">Everforest</option>
+          <option value="newspaper">Newspaper</option>
         </select>
       </div>
       {% if request.url.path not in ["/login", "/forgot-password", "/reset-password"] %}
