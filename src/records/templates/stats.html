@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Stats - Records{% endblock %}
+{% block content %}
+<div class="page-title">
+  <div>
+    <p class="terminal-prompt">&gt; stats</p>
+    <h1>Stats</h1>
+    <p class="muted">A quiet read on how the archive is distributed.</p>
+  </div>
+</div>
+
+<section class="panel stats-summary">
+  <div class="stat-tile">
+    <span>Entries</span>
+    <strong>{{ stats.entry_count }}</strong>
+  </div>
+  <div class="stat-tile">
+    <span>Categories</span>
+    <strong>{{ stats.category_count }}</strong>
+  </div>
+  <div class="stat-tile">
+    <span>Tags</span>
+    <strong>{{ stats.tag_count }}</strong>
+  </div>
+  <div class="stat-tile">
+    <span>Creators</span>
+    <strong>{{ stats.creator_count }}</strong>
+  </div>
+  <div class="stat-tile">
+    <span>Files</span>
+    <strong>{{ stats.file_count }}</strong>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <section class="panel stat-panel">
+    <div class="section-heading">
+      <h2>By Category</h2>
+      <a href="/categories">Browse</a>
+    </div>
+    <div class="stat-list">
+      {% for category, count in categories %}
+        <a class="stat-row" href="/categories/{{ category.id }}">
+          <span class="stat-label">{{ category.name }}</span>
+          <span class="stat-bar" aria-hidden="true"><span style="width: {{ (count / max_category_count * 100)|round(0, 'floor') if max_category_count else 0 }}%"></span></span>
+          <span class="stat-count">{{ count }}</span>
+        </a>
+      {% else %}
+        <p class="muted">No categories yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel stat-panel">
+    <div class="section-heading">
+      <h2>Top Tags</h2>
+      <a href="/search">Search</a>
+    </div>
+    <div class="stat-list">
+      {% for tag, count in tags %}
+        <a class="stat-row" href="/search?tag={{ tag|urlencode }}">
+          <span class="stat-label">{{ tag }}</span>
+          <span class="stat-bar" aria-hidden="true"><span style="width: {{ (count / max_tag_count * 100)|round(0, 'floor') if max_tag_count else 0 }}%"></span></span>
+          <span class="stat-count">{{ count }}</span>
+        </a>
+      {% else %}
+        <p class="muted">No tags yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel stat-panel">
+    <div class="section-heading">
+      <h2>Top Creators</h2>
+      <a href="/search">Search</a>
+    </div>
+    <div class="stat-list">
+      {% for creator, count in creators %}
+        <a class="stat-row" href="/search?creator={{ creator|urlencode }}">
+          <span class="stat-label">{{ creator }}</span>
+          <span class="stat-bar" aria-hidden="true"><span style="width: {{ (count / max_creator_count * 100)|round(0, 'floor') if max_creator_count else 0 }}%"></span></span>
+          <span class="stat-count">{{ count }}</span>
+        </a>
+      {% else %}
+        <p class="muted">No creators yet.</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel stat-panel">
+    <div class="section-heading">
+      <h2>Signals</h2>
+    </div>
+    <div class="signal-list">
+      <div class="signal-row">
+        <span>Unique tags</span>
+        <strong>{{ stats.tag_count }}</strong>
+      </div>
+      <div class="signal-row">
+        <span>Entries with files</span>
+        <strong>{{ stats.file_count }}</strong>
+      </div>
+      <div class="signal-row">
+        <span>Most-used tag</span>
+        <strong>{% if stats.top_tag %}{{ stats.top_tag }}{% else %}None yet{% endif %}</strong>
+      </div>
+    </div>
+  </section>
+</section>
+{% endblock %}

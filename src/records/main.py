@@ -367,16 +367,42 @@ def reset_password(
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, session: SessionDep):
     categories_with_counts = repo.list_categories_with_counts(session)
+    stats = repo.collection_stats(session)
     return templates.TemplateResponse(
         request,
         "home.html",
         {
             "db_path": DB_PATH,
             "categories": categories_with_counts,
-            "category_count": len(categories_with_counts),
-            "entry_count": repo.count_entries(session),
+            "category_count": stats["category_count"],
+            "entry_count": stats["entry_count"],
+            "stats": stats,
             "recent_entries": repo.recent_entries(session),
             "query": "",
+        },
+    )
+
+
+@app.get("/stats", response_class=HTMLResponse)
+def stats(request: Request, session: SessionDep):
+    summary = repo.collection_stats(session)
+    categories = repo.top_categories(session)
+    tags = repo.tag_counts(session, limit=12)
+    creators = repo.top_creators(session)
+    max_category_count = max((count for _, count in categories), default=0)
+    max_tag_count = max((count for _, count in tags), default=0)
+    max_creator_count = max((count for _, count in creators), default=0)
+    return templates.TemplateResponse(
+        request,
+        "stats.html",
+        {
+            "stats": summary,
+            "categories": categories,
+            "tags": tags,
+            "creators": creators,
+            "max_category_count": max_category_count,
+            "max_tag_count": max_tag_count,
+            "max_creator_count": max_creator_count,
         },
     )
 

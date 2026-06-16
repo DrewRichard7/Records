@@ -65,6 +65,15 @@ def count_entries(session: Session) -> int:
     return session.exec(select(func.count(Entry.id))).one()
 
 
+def count_categories(session: Session) -> int:
+    return session.exec(select(func.count(Category.id))).one()
+
+
+def count_entries_with_documents(session: Session) -> int:
+    statement = select(func.count(Entry.id)).where(Entry.document_filename != "")
+    return session.exec(statement).one()
+
+
 def get_category(session: Session, category_id: int) -> Category | None:
     return session.get(Category, category_id)
 
@@ -272,6 +281,57 @@ def distinct_tags(session: Session, category_id: int | None = None) -> list[str]
     for value in session.exec(statement):
         tags.update(split_tags(value))
     return sorted(tags, key=str.lower)
+
+
+def top_categories(session: Session, limit: int = 8) -> list[tuple[Category, int]]:
+    statement = (
+        select(Category, func.count(Entry.id).label("entry_count"))
+        .outerjoin(Entry)
+        .group_by(Category.id)
+        .order_by(func.count(Entry.id).desc(), Category.name)
+        .limit(limit)
+    )
+    return [(category, count) for category, count in session.exec(statement).all()]
+
+
+def top_creators(session: Session, limit: int = 8) -> list[tuple[str, int]]:
+    statement = (
+        select(Entry.creator, func.count(Entry.id).label("entry_count"))
+        .where(Entry.creator != "")
+        .group_by(Entry.creator)
+        .order_by(func.count(Entry.id).desc(), Entry.creator)
+        .limit(limit)
+    )
+    return [(creator, count) for creator, count in session.exec(statement).all()]
+
+
+def tag_counts(session: Session, limit: int | None = None) -> list[tuple[str, int]]:
+    counts: dict[str, tuple[str, int]] = {}
+    for value in session.exec(select(Entry.tags).where(Entry.tags != "")):
+        for tag in split_tags(value):
+            key = tag.lower()
+            label, count = counts.get(key, (tag, 0))
+            counts[key] = (label, count + 1)
+    ranked = sorted(counts.values(), key=lambda item: (-item[1], item[0].lower()))
+    return ranked[:limit] if limit else ranked
+
+
+def collection_stats(session: Session) -> dict[str, int | str]:
+    entry_count = count_entries(session)
+    category_count = count_categories(session)
+    tags = tag_counts(session)
+    creator_count = len(distinct_creators(session))
+    file_count = count_entries_with_documents(session)
+    top_tag = tags[0][0] if tags else ""
+    return {
+        "category_count": category_count,
+        "entry_count": entry_count,
+        "tag_count": len(tags),
+        "creator_count": creator_count,
+        "file_count": file_count,
+        "top_tag": top_tag,
+    }
+
 
 def format_datetime(value: datetime) -> str:
     return value.strftime("%Y-%m-%d")

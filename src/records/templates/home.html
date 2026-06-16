@@ -6,7 +6,17 @@
   <div class="overview-stats">
     <span><strong>{{ category_count }}</strong> categories</span>
     <span><strong>{{ entry_count }}</strong> entries</span>
+    <span><strong>{{ stats.tag_count }}</strong> tags</span>
+    <span><strong>{{ stats.creator_count }}</strong> creators</span>
   </div>
+  <p class="muted home-stat-note">
+    {% if stats.top_tag %}
+      Most-used tag: <a href="/search?tag={{ stats.top_tag|urlencode }}">{{ stats.top_tag }}</a>
+    {% else %}
+      Add tags to unlock collection patterns.
+    {% endif %}
+    <a href="/stats">View stats</a>
+  </p>
   <button class="button search-launch" type="button" data-open-search>Search archive</button>
 </section>
 
